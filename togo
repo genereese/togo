@@ -1,0 +1,675 @@
+#!/usr/bin/python
+
+import exceptions
+import logging
+import os
+import re
+import sys
+
+from sqlobject import *
+from optparse import OptionParser
+
+DEBUG=True
+
+# Configure logger
+logging.basicConfig(format="%(message)s", level=logging.INFO)
+log = logging.getLogger()
+
+APPLICATION_DATABASE_NAME = 'helper.db'
+
+PREFERENCE_FULL_NAME = ''
+PREFERENCE_EMAIL_ADDRESS = ''
+
+class Application:
+    """
+    Main application class.
+    
+    Here we perform command line parsing and the initialization/configuration
+    of user parameters and package databases.
+    """
+    
+    # Set up some class-wide defaults
+    path_root = os.path.abspath(os.path.curdir)
+    path_database = os.path.join(path_root, APPLICATION_DATABASE_NAME)
+    preference_path_database = os.path.join(os.path.expanduser('~/.togo'), 'preferences.db')
+    
+    def __init__(self):
+        """
+        Application initialization.
+        """
+        
+        # Set up the option parser to parse CLI options
+        p = OptionParser()
+        p.add_option('--configure', action="store_true", help='Configure togo for this user.')
+        p.add_option('-c', '--create', help="Create a new package.")
+        p.add_option('-b', '--build', action="store_true", help="Build the package.")
+        p.add_option('-m', '--meta', action="store_true", help="Reference the metadata.")
+        p.add_option('-s', '--spec', help="Reference a spec object.")
+        p.add_option('-p', '--package', action="store_true", help="Reference a package object.")
+        p.add_option('-a', '--all', action="store_true", help="Perform all actions.")
+        p.add_option('-f', '--flag', help="Add flag to files/directories.")
+        p.add_option('-l', '--list', action="store_true", help="List all file flags.")
+        p.add_option('--clear', action="store_true", help="Clear all file flags.")
+        self.options, self.args = p.parse_args()
+        
+        # Configure the application
+        if (self.options.configure):
+            self.configure(True)
+            sys.exit(1)
+        else:
+            self.configure()
+        
+        # If creating a new package, do only that and then exit.
+        if (self.options.create):
+            self.createPackage(self.options.create)
+            sys.exit()
+
+        # If not creating a new package, attempt to set up the database
+        try:
+            self.setupDatabase()
+        except:
+            log.warning('NOTICE: You are currently outside of a togo build directory.')
+
+        # If the build option is specified, perform the required actions
+        if (self.options.build):
+            if (self.options.meta):
+                if (self.options.spec):
+                    # Generate the meta-data based on the passed spec name
+                    self.generateMetadata(self.options.spec)
+                else:
+                    log.error("You must provide a spec file to build against.")
+                    sys.exit(1)
+            
+            elif (self.options.spec):
+                # Generate a spec file based on the passed spec name
+                self.generateSpec(self.options.spec)
+            
+            elif (self.options.package):
+                # Generate the package
+                self.buildPackage()
+            else:
+                log.error("You must provide an object to build.")
+                sys.exit(1)
+        
+        elif (self.options.all):
+            # Do everything with some default values to save time
+            if (self.options.spec):
+                self.generateSpec(self.options.spec)
+                self.generateMetadata(self.options.spec)
+                self.buildPackage()
+            else:
+                temp_spec_name = self.generateSpec()
+                self.generateMetadata(temp_spec_name)
+                self.buildPackage()
+        
+        elif (self.options.flag):
+            # Flag individual files
+            self.updateFileDatabase()
+            self.flagItem(self.options.flag)
+        
+        elif (self.options.list):
+            # List file flags
+            self.listFlaggedItems()
+        
+        elif (self.options.clear):
+            # Clear all file flags
+            self.clearAllFlags()
+            
+        else:
+            # Display the help screen if no options specified
+            p.print_help()
+            sys.exit(1)
+
+    def configure(self, initialize=False):
+        """
+        Configure the application for the current user.
+        
+        If the application has already been configured, just populate the values.
+        """
+        # Create the preferences directory and database for this user
+        Dir(os.path.split(self.preference_path_database)[0])
+        if not (os.path.exists(self.preference_path_database)):
+            initialize = True
+
+        connection_string = 'sqlite://%s' % (self.preference_path_database)
+        self.connection = connectionForURI(connection_string)
+        sqlhub.processConnection = self.connection
+        
+        class Preference(SQLObject):
+            """
+            Contains the user-level preferences for the application
+            """
+            full_name = StringCol()            
+            email_address = StringCol()
+
+        # Prompt the user for information if needed.
+        if (initialize):
+            Preference.dropTable(ifExists=True)
+            Preference.createTable()
+            print
+            print "Configuring rpmhelper.."
+            print "========================"
+            sys.stdout.write('Please enter your full name (Ex: Bob Wilkins): ')
+            full_name = raw_input()
+            sys.stdout.write('Please enter your email address (Ex: bob.wilkins@rpmhelper.com): ')
+            email_address = raw_input()
+            Preference(full_name=full_name, email_address=email_address)
+            print
+        else:
+            p = Preference.get(1)
+            full_name = p.full_name
+            email_address = p.email_address
+
+        # Store the user's name and address globally to reference them later.
+        global PREFERENCE_FULL_NAME
+        PREFERENCE_FULL_NAME = full_name
+        global PREFERENCE_EMAIL_ADDRESS
+        PREFERENCE_EMAIL_ADDRESS = email_address
+        self.connection.close()
+
+                
+    def setupDatabase(self):
+        """
+        Sets up the package database
+        """
+        if (os.path.exists(self.path_database)):
+            self.connectToDatabase()
+        else:
+            raise exceptions.IOError("Can't find package database.")
+    
+    def connectToDatabase(self):
+        """
+        Connects to the package database
+        """
+        connection_string = 'sqlite://%s' % (self.path_database)
+        self.connection = connectionForURI(connection_string)
+        sqlhub.processConnection = self.connection        
+
+    def initializeDatabase(self):
+        """
+        Initializes the package database
+        """
+        self.connectToDatabase()
+        Package.dropTable(ifExists=True)
+        Package.createTable(ifNotExists=True)
+        PackageFile.dropTable(ifExists=True)
+        PackageFile.createTable(ifNotExists=True)
+        FileFlag.dropTable(ifExists=True)
+        FileFlag.createTable(ifNotExists=True)
+        
+        # Initialize the flag types
+        FileFlag(name = "REGULAR")
+        FileFlag(name = "%config")
+        FileFlag(name = "%doc")
+        
+    def createPackage(self, name):
+        """
+        Creates a new package and package database
+        """
+        path = os.path.join(self.path_root, name)
+        if not (os.path.exists(path)):
+            log.info('Creating new package at: %s' % (path))
+            d = Dir(path)
+            self.path_database = os.path.join(d.full_path, APPLICATION_DATABASE_NAME)
+            self.initializeDatabase()
+            os.chdir(name)
+            Package(package_name = name)
+        else:
+            log.error('Can not create package at %s - it already exists.' % (path))
+            sys.exit(1)
+
+    def generateSpec(self, spec_file='generated.spec'):
+        """
+        Generates a spec file by the given name
+        """
+        p = Package.get(1)        
+        p.generateSpec(spec_file)
+        return spec_file
+    
+    def generateMetadata(self, spec_file):
+        p = Package.get(1)
+        p.generateMetadata(spec_file)
+        
+    def buildPackage(self):
+        p = Package.get(1)
+        p.buildPackage()
+
+    def updateFileDatabase(self):
+        p = Package.get(1)
+        p.updateFileList()
+        
+    def flagItem(self, item):
+        p = Package.get(1)
+        p.flagItem(item)
+
+    def listFlaggedItems(self):
+        p = Package.get(1)
+        p.listFlaggedItems()
+    
+    def clearAllFlags(self):
+        p = Package.get(1)
+        p.clearAllFlags()
+
+class Package(SQLObject):
+    
+    package_name = StringCol()
+    package_path_root = StringCol(default='./root')
+    #package_path_patches = StringCol(default='./patches')
+    #package_path_sources = StringCol(default='./sources')
+    package_path_spec = StringCol(default='./spec')
+    package_path_meta = StringCol(default='./meta')
+    package_path_rpms = StringCol(default='./rpms')
+    
+    spec_section_extension = ''
+     
+    def _init(self, *args, **keys):
+        SQLObject._init(self, *args, **keys)
+        
+        self.spec_var_name = self.package_name
+        
+        for item in dir(self):
+            if item.startswith('package_path_'):
+                Dir(getattr(self, item))
+        
+        changelog_date = os.popen(r"date '+%a %b %d %Y'").read().strip()
+        default_changelog_date_string = "* %s %s <%s>" % (changelog_date, PREFERENCE_FULL_NAME, PREFERENCE_EMAIL_ADDRESS)
+        default_changelog_date_string += "\n- Initial version."
+        
+        self.default_spec_vars = [
+            {'#': 'The name of your package'},
+            {'Name' : self.package_name},
+            {'' : ''},
+            
+            {'#': 'A short summary of your package'},
+            {'Summary' : 'None'},
+            {'' : ''},
+            
+            {'#': 'The version of your package'},
+            {'Version' : '1.0'},
+            {'' : ''},
+            
+            {'#': 'The release number of your package'},
+            {'Release' : '1'},
+            {'' : ''},
+            
+            {'#': 'Any license you wish to list'},
+            {'License' : 'GNU GPL'},
+            {'' : ''},
+            
+            {'#': 'What group this RPM would typically reside in'},
+            {'Group' : 'Applications/System'},
+            {'' : ''},
+            
+            {'#': 'Who packaged this RPM'},
+            {'Packager' : '%s <%s>' % (PREFERENCE_FULL_NAME, PREFERENCE_EMAIL_ADDRESS)},
+            {'' : ''},
+            
+            {'#': 'The build architecture of this RPM (noarch/x86_64/i386/etc)'},
+            {'Buildarch' : 'noarch'},
+            {'' : ''},
+            
+            {'#': 'You generally should not need to mess with this setting'},
+            {'Buildroot' : r'%{_tmppath}/%{name}'},
+            {'' : ''},
+            
+            {'#': 'Change this extension to change the compression level in your RPM'},
+            {'#': 'tar / tar.gz / tar.bz2'},
+            {'Source0' : r'%{name}.tar'},
+            {'' : ''},
+            
+            {'#': 'If this package has prerequisites, uncomment this line and'},
+            {'#': ' list them here - examples are already listed'},
+            {'#Requires' : 'bash, python >= 2.7'},
+            {'' : ''},
+            
+            {'#': 'You probably do not need to change this'},
+            {'Provides' : self.package_name},
+            {'' : ''},
+            
+            {'#': 'A more verbose description of your package'},
+            {'%' : r'description'},
+            {'' : 'None'},
+            {'' : ''},
+            
+            {'#': 'You probably do not need to change this'},
+            {'' : r'%define debug_package %{nil}'},
+            {'' : ''},
+            ]
+        
+        self.default_spec_sections = [
+            {'prep' : r'%prep' +'\n' + r'%setup -q -c'},
+            {'build' : r'%build' + '\n' + r'rsync -a . %{buildroot}/'},
+            {'install' : r'%install'},
+            {'clean' : r'%clean' + '\n' + r'rm -rf %{buildroot}'},
+            {'pre' : r'%pre'},
+            {'post' : r'%post'},
+            {'preun' : r'%preun'},
+            {'postun' : r'%postun'},
+            {'trigger' : r'#%trigger'},
+            {'triggerin' : r'#%triggerin'},
+            {'triggerun' : r'#%triggerun'},
+            {'changelog' : r'%changelog' + '\n' + default_changelog_date_string},
+            ]
+        
+        f = File(os.path.join(self.package_path_spec, 'header'))
+        if (os.stat(f.full_path)[6] < 1):
+            for var in self.default_spec_vars:
+                f.write(var.keys()[0])
+                if (var.keys()[0] == '#'):
+                    f.write(' ')
+                elif (var.keys()[0] == '%'):
+                    pass
+                elif (var.keys()[0] == ''):
+                    pass
+                else:
+                    f.write(': ')
+                f.write(var.values()[0])
+                f.write('\n')
+        for section in self.default_spec_sections:
+            path_to_section = os.path.join(self.package_path_spec, section.keys()[0])
+            f = File(path_to_section + self.spec_section_extension)
+            if (os.stat(f.full_path)[6] < 1):
+                f.write(section.values()[0])
+                f.write('\n')
+    
+    def generateSpec(self, output_file):
+        fd = open(output_file, 'w')
+        header_file_path = os.path.join(self.package_path_spec, 'header')
+        fd.write(File(header_file_path).read())
+        fd.write('\n')
+        for item in self.default_spec_sections:
+            fd.write(File(os.path.join(self.package_path_spec, item.keys()[0])
+                          + self.spec_section_extension).read())
+            fd.write('\n')
+        self.updateFileList()
+        fd.write(r'%files')
+        fd.write('\n')
+        flags = list(FileFlag.select())
+        for flag in flags:
+            flagged_items = flag.package_files
+            for flagged_item in flagged_items:
+                if (flag.name == 'REGULAR'):
+                    write_string = flagged_item.path
+                else:
+                    write_string = "%s %s" % (flag.name, flagged_item.path)
+                fd.write(write_string)
+                fd.write('\n')
+        fd.write('\n')
+        fd.close()        
+    
+    def updateFileList(self):
+        log.info("")
+        log.info("Updating file list...")
+        si, so, se = os.popen3('find %s | grep -v \.svn' % (self.package_path_root))
+        current_file_list = so.readlines()
+        current_files = {}
+        prefix_length = len(self.package_path_root)
+        # Create a dictionary of the current files under the package root
+        for file in current_file_list:
+            converted_file_path = file.strip()[prefix_length:]
+            if (converted_file_path != ''):
+                current_files[converted_file_path] = ''
+
+        # Iterate over all files in the database and remove those which no longer exist
+        for file in list(PackageFile.select()):
+            try:
+                current_files[file.path]
+            except:
+                PackageFile.deleteBy(path=file.path)
+                log.info("Removed '%s' from file table." % (file.path))
+        
+        # Add new files to package database
+        for file in current_file_list:
+            converted_file_path = file.strip()[prefix_length:]
+            if (converted_file_path != ''):
+                try:
+                    PackageFile(path=converted_file_path)
+                except:
+                    pass
+                else:
+                    log.info("Added '%s' to file table." % (converted_file_path))
+        
+    def generateMetadata(self, spec_file):
+        self.cleanRedHatDir()
+        self.makeDirStructure(spec_file)
+        self.tarMainSource(spec_file)
+    
+    def cleanRedHatDir(self):
+        """Removes old build instances in current projects directory"""
+        meta_path = os.path.join(self.package_path_meta, '*')
+        log.info('Cleaning Metadata')
+        log.info('==================================')
+        log.info(' Removing old files from:')
+        log.info('   %s' % (meta_path))
+        execute = 'rm -rf %s 2> /dev/null' % (meta_path)
+        os.system(execute)
+        log.info('')
+
+    def makeDirStructure(self, spec_file):
+        """Creates build directory structure"""
+        meta_path = os.path.abspath(os.path.join(self.package_path_meta))
+        log.info('Creating Metadata Structure')
+        log.info('==================================')
+        log.info(' Creating directory structure under: %s' % (meta_path))
+        os.system('mkdir -p %s/usr/src/redhat' % (meta_path))
+        dirs = ("BUILD", "RPMS", "SOURCES", "SPECS", "SRPMS")
+        for dir in dirs:
+            dir_path = os.path.join(meta_path, 'redhat', dir)
+            log.info("   Creating dir '%s'" % (dir_path))
+            os.system('mkdir -p %s' % (dir_path))
+            link_path = os.path.join(meta_path, 'usr', 'src', 'redhat', dir)
+            log.info("     Linking %s to %s" % (dir_path, link_path))
+            os.system('ln -s %s %s' % (dir_path, link_path))
+        spec_link_path = os.path.join(meta_path, 'redhat', 'SPECS', os.path.basename(spec_file))
+        spec_file_path = os.path.join(meta_path, '..', spec_file)
+        log.info('   Linking %s to %s' % (spec_file, spec_link_path))
+        os.system('ln -s %s %s' % (spec_file_path, spec_link_path))
+        log.info('')
+    
+    def tarMainSource(self, spec_file):
+        """Build tarball of the SOURCE directory for togobuild
+        """
+        excludes = ['.svn', '.pyo']
+        compression_types = [{'tar' : ''},
+                             {'tar.gz' : 'z'},
+                             {'tar.bz' : 'j'},
+                             {'tar.bz2' :'j'},
+                             {'gz' : 'z'},
+                             {'bz' : 'j'},
+                             {'bz2' : 'j'}]
+        tar_args = 'c'
+
+        # Determine desired compression type
+        try:
+            specified_compression_type = os.popen('grep Source0 %s' % (spec_file)).readlines()[0].strip()
+        except:
+            log.error("Can't find source line in specified tar. Unable to determine compression level.")
+            sys.exit(1)
+        for type in compression_types:
+            if (specified_compression_type.endswith(type.keys()[0])):
+                tar_extension = type.keys()[0]
+                tar_args += type.values()[0]
+                break
+        tar_args += 'f'
+        
+        log.info('Creating Compressed Source')
+        log.info('==================================')
+        log.info(' Compressing...')
+        expanded = " ".join(["--exclude %s" % (v) for v in excludes])
+        source_path = os.path.join(self.package_path_meta, 'redhat', 'SOURCES', self.package_name)
+        execute = 'tar -C %s -%s %s.%s . %s' % (self.package_path_root, tar_args, source_path, tar_extension, expanded)
+        os.system(execute)
+        log.info('  Done')
+        log.info('')
+
+    def setUserVars(self):
+        """Sets up the ~/.rpmmacros file.
+        old style string concatenation due to the % character being echoed
+        """
+        import socket
+        hostname = socket.gethostname()
+        identity = os.getenv('USER')
+        macros_file = os.path.expanduser('~/.rpmmacros')
+        log.info('Setting Up Environment Variables')
+        log.info('==================================')
+        log.info(' Setting \'%_usr\' macro')
+        #Due to the %_ we can't use standard variable insertion
+        fd = open(macros_file, 'w')
+        fd.write(r"%_usr           ")
+        fd.write(os.path.join(os.path.abspath(self.package_path_meta), 'usr'))
+        fd.write('\n')
+        log.info(' Setting gpg key macros')
+        fd.write(r"%_signature     gpg")
+        fd.write("\n")
+        fd.write(r"%_gpg_path      ~/.gnupg")
+        fd.write("\n")
+        fd.write(r"%_gpg_name      ")
+        fd.write(identity + '@' + hostname)
+        fd.write('\n')
+        fd.write("%_gpgbin        /usr/bin/gpg")
+        fd.write('\n')
+        fd.write("%_topdir        ")
+        fd.write("%s" % (os.path.join(os.getcwd(), 'meta', 'redhat')))
+        fd.close()
+        log.info('')
+    
+    def buildPackage(self):
+        self.setUserVars()
+        self.rpmBuild()
+        self.moveRPMs()
+
+    def rpmBuild(self):
+        """Execute and Time the RPM build"""
+        log.info(' Building the RPM')
+        log.info('==================================')
+        spec_path = os.path.join(self.package_path_meta, 'redhat', 'SPECS', '*.spec')
+        os.system('time rpmbuild -bb %s' % (spec_path))
+        log.info('')
+    
+    def moveRPMs(self):
+        rpms_path = os.path.join(self.package_path_meta, 'redhat', 'RPMS')
+        os.system('mv -v `find %s | grep .rpm` %s &>/dev/null' % (rpms_path, self.package_path_rpms))
+        log.info('Any generated RPMs are in: %s' % (self.package_path_rpms))
+
+    def flagItem(self, item):
+        if not (os.path.exists(item)):
+            log.error("Couldn't find the specified file/dir to flag.")
+            sys.exit(1)
+
+        item = os.path.abspath(item)
+        strip_string = os.path.abspath(self.package_path_root)
+        converted_item = re.sub(strip_string, '', item)
+        
+        try:
+            item = list(PackageFile.selectBy(path=converted_item))[0]
+        except:
+            print "Couldn't find '%s' in the file/dir database." % (converted_item)
+            sys.exit(1)
+        
+        print
+        print "Options:"
+        print "--------"
+        choices = []
+        for result in list(FileFlag.select()):
+            choices.append(result)
+        for choice in choices:
+            print '%s) %s' % (choice.id, choice.name)
+        print
+        print "-1) Clear all flags from this item"
+        print
+        print "0) Cancel"
+        print
+        sys.stdout.write("Please select a flag to apply: ")
+        try:
+            selection = int(raw_input())
+        except:
+            print "Invalid input."
+            sys.exit(1)
+        if (selection == 0):
+            print "No flags applied."
+            sys.exit(0)
+        elif (selection == -1):
+            for flag in item.flags:
+                item.removeFileFlag(flag)
+            print "Removed file flag(s) from: %s" % (item.path)
+        else:
+            choice = choices[selection - 1]
+            item.addFileFlag(choice)
+            print "Applied %s flag to: %s" % (choice.name, item.path)
+    
+    def listFlaggedItems(self):
+        flags = list(FileFlag.select())
+        for flag in flags:
+            flagged_items = flag.package_files
+            for flagged_item in flagged_items:
+                print flag.name, flagged_item.path
+    
+    def clearAllFlags(self):
+        flags = list(FileFlag.select())
+        for flag in flags:
+            flagged_items = flag.package_files
+            for flagged_item in flagged_items:
+                flag.removePackageFile(flagged_item)
+        print "Cleared all file flags."
+  
+class PackageFile(SQLObject):
+    path = StringCol(unique=True)
+    flags = RelatedJoin('FileFlag')
+    
+class FileFlag(SQLObject):
+    name = StringCol()
+    package_files = RelatedJoin('PackageFile')
+
+class File:
+    def __init__(self, full_path):
+        self.full_path = full_path
+        self.path, self.base_name = os.path.split(self.full_path)
+        self.create()
+    
+    def create(self):
+        os.system('mkdir -p %s' % (self.path))
+        self.touch()
+    
+    def touch(self):
+        os.system('touch %s' % (self.full_path))
+
+    def read(self):
+        fd = open(self.full_path, 'r')
+        data = fd.read()
+        fd.close()
+        return data
+    
+    def write(self, data):
+        fd = open(self.full_path, 'a')
+        fd.write(data)
+        fd.close()
+
+    def getPath(self):
+        return self.full_path
+    
+    def getBasePath(self):
+        return self.path
+    
+    def getName(self):
+        return self.base_name
+
+class Dir:
+    def __init__(self, full_path, fail_on_exist=False, fail_on_missing=False):
+        self.full_path = full_path
+        if (fail_on_exist) and (os.path.exists(self.full_path)):
+            log.error("Existing directory found at %s" % (self.full_path))
+            sys.exit()
+        elif (fail_on_missing) and not (os.path.exists(self.full_path)):
+            log.error("Directory does not exist.")
+            sys.exit()
+        else:
+            self.create()
+
+    def create(self):
+        os.system('mkdir -p %s' % (self.full_path))
+        
+    def getPath(self):
+        return self.full_path
+
+togo = Application()
+
