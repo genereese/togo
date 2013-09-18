@@ -1,5 +1,15 @@
-# Installation
+# What is togo-rpm?
+Want to create an RPM to deploy your software and don't want to spend hours learning how to do it?
 
+Use togo-rpm! You can have **your first RPM** built and ready to install **in less than 5 minutes.**
+
+Examples:
+* A sysadmin who has a script or group of scripts he wants to add to a yum repository
+* A developer who has pre-compiled binaries he wants to package up and install on several systems
+* Anyone who wants to keep track of everything on their system(s) with RPM
+
+# Getting Started
+### Installation
 Clone the repo, run the build script, and install the RPM
 
 ```
@@ -10,7 +20,7 @@ $ cd togo-rpm; ./build-togo.sh
 $ sudo yum localinstall ./rpms/*.rpm
 ```
 
-## Configuration
+### Configuration
 Now that togo is installed, let's configure it.
 
 ```bash
@@ -19,7 +29,7 @@ $ togo --configure
 
 You will be prompted for your name and an email address. This information is only used to populate some default variables in your RPM configuration file (known as a '.spec' file), and is not used for any other purpose.
 
-## Project Creation
+### Project Creation
 Once togo is configured, you can create your first project. To do this, move to the desired parent directory and run togo with the '-c' option. Whatever you pass as the argument will be the name of your new RPM. You can change it later, but it's easiest to start out with the proper name:
 
 ```bash
@@ -33,7 +43,7 @@ $ cd /home/username/rpms
 $ togo -c my-package-name
 ```
 
-## Directory Structure Overview
+### Directory Structure Overview
 You will now notice a new directory under your current directory called 'my-package-name' (or whatever you named it). Change into this directory to get started.
 
 ```bash
@@ -42,7 +52,7 @@ $ cd my-package-name
 
 Here you will notice several directories. The main ones you will be concerned with for a 'quick start' are the 'root' and 'spec' directories.
 
-### The 'root' Directory
+#### The 'root' Directory
 The 'root' directory represents your RPMs expanded files.
 
 For example, say you developed a script called 'stat.sh' that polls the host machine for statistical information. You would like to place this script in an RPM and make sure that users on the system have access to it.
@@ -211,15 +221,15 @@ Description :
 None
 ```
 
-## Additional Information
+### Additional Information
 
-### The 'spec' Directory
+#### The 'spec' Directory
 The 'spec' directory contains templates of the different sections of the RPM '.spec' file. These sections include RPM information (such as version numbers and author information) as well as basic setup and cleanup instructions.
 
-#### header
+##### header
 This file contains the basic information about your RPM. If you need to change the version/release of your RPM, you can do it here. You will also need to update the 'Summary' and 'License' fields for your RPM.
 
-#### pre
+##### pre
 This file is an empty shell script that may be used to ensure certain things are done before your RPM is installed.
 
 Examples include:
@@ -228,7 +238,7 @@ Examples include:
   * Gathering of host information
   * Starting/Stopping services
 
-#### post
+##### post
 This file is an empty shell script that may be used to ensure certain things are done after your RPM is installed.
 
 Examples include:
@@ -236,7 +246,7 @@ Examples include:
   * Starting/Stopping services
   * Altering configuration files
 
-#### preun
+##### preun
 This file is an empty shell script that may be used to ensure certain things are done before your RPM is removed from a system.
 
 Examples include:
@@ -244,7 +254,7 @@ Examples include:
   * Stopping services before they are removed
   * Checking the current state of a system before RPM removal
 
-#### postun
+##### postun
 This file is an empty shell script that may be used to ensure certain things are done after your RPM is removed from a system.
 
 Examples include:
@@ -252,10 +262,10 @@ Examples include:
   * Restarting services which may have partially depended on your RPM
   * Performing final cleanup of files not included in your RPM (like log files) or modifications of config files you may have altered when you installed your RPM.
 
-#### changelog
+##### changelog
 This is your changelog for your RPM. The script provides a structure that you may use, but you may change this to whatever format you would like.
 
-#### tigger, triggerin and triggerun
+##### tigger, triggerin and triggerun
 These sections allow your RPM to perform actions based on the state changes of other packages on the system.
 
 For example, if you wanted something about your package to change if the user installs sendmail, you may perform those actions in these files.
