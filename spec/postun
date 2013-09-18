@@ -1,1 +1,2 @@
 %postun
+rm -rf ~/.togo
