@@ -8,7 +8,6 @@ $ git clone https://github.com/genereese/togo-rpm.git
 $ cd togo-rpm; ./build-togo.sh
 
 $ yum localinstall ./rpms/*.rpm
-
 ```
 
 ## Configuration
