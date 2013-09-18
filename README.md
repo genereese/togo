@@ -1,8 +1,18 @@
-## Installation ##
-Simply download the script and place it in your ~/bin directory.
+# Installation
+
+Clone the repo, run the build script, and install the RPM
+
+```
+$ git clone https://github.com/genereese/togo-rpm.git
+
+$ cd togo-rpm; ./build-togo.sh
+
+$ yum localinstall ./rpms/*.rpm
+
+```
 
 ## Configuration
-Next, configure togo.
+Now that togo is installed, let's configure it.
 
 ```bash
 $ togo --configure
@@ -15,10 +25,10 @@ Once togo is configured, you can create your first project. To do this, move to 
 
 ```bash
 # Create a parent directory for your RPM projects
-$ mkdir -p ./rpms
+$ mkdir -p /home/username/rpms
 
 # Change to that directory
-$ cd ./rpms
+$ cd /home/username/rpms
 
 # Run togo with a -c to create a new package
 $ togo -c my-package-name
