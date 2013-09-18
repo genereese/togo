@@ -1,0 +1,45 @@
+# The name of your package
+Name: togo
+
+# A short summary of your package
+Summary: A quick/easy RPM making script
+
+# The version of your package
+Version: 1.0
+
+# The release number of your package
+Release: 4
+
+# Any license you wish to list
+License: GNU GPL
+
+# What group this RPM would typically reside in
+Group: Applications/System
+
+# Who packaged this RPM
+Packager: Gene Reese <gene.reese@xirsix.com>
+
+# The build architecture of this RPM (noarch/x86_64/i386/etc)
+Buildarch: noarch
+
+# You generally should not need to mess with this setting
+Buildroot: %{_tmppath}/%{name}
+
+# Change this extension to change the compression level in your RPM
+# tar / tar.gz / tar.bz2
+Source0: %{name}.tar.gz
+
+# If this package has prerequisites, uncomment this line and
+#  list them here - examples are already listed
+Requires: bash, python >= 2.5, python-sqlobject, rpm-build, rsync
+
+# You probably do not need to change this
+Provides: togo
+
+# A more verbose description of your package
+%description
+Make simple RPMs without devoting a lot of time into figuring out how to do it!
+
+# You probably do not need to change this
+%define debug_package %{nil}
+

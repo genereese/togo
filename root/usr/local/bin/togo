@@ -183,7 +183,8 @@ class Application:
         """
         connection_string = 'sqlite://%s' % (self.path_database)
         self.connection = connectionForURI(connection_string)
-        sqlhub.processConnection = self.connection        
+        sqlhub.processConnection = self.connection
+        self.transaction = self.connection.transaction()
 
     def initializeDatabase(self):
         """
@@ -236,7 +237,8 @@ class Application:
 
     def updateFileDatabase(self):
         p = Package.get(1)
-        p.updateFileList()
+        p.updateFileList(self.transaction)
+        self.transaction.commit()
         
     def flagItem(self, item):
         p = Package.get(1)
@@ -392,12 +394,14 @@ class Package(SQLObject):
                     write_string = flagged_item.path
                 else:
                     write_string = "%s %s" % (flag.name, flagged_item.path)
+                    if (flag.name == "%doc"):
+                        write_string += '.gz'
                 fd.write(write_string)
                 fd.write('\n')
         fd.write('\n')
         fd.close()        
     
-    def updateFileList(self):
+    def updateFileList(self, transaction=None):
         log.info("")
         log.info("Updating file list...")
         si, so, se = os.popen3('find %s | grep -v \.svn' % (self.package_path_root))
@@ -423,7 +427,7 @@ class Package(SQLObject):
             converted_file_path = file.strip()[prefix_length:]
             if (converted_file_path != ''):
                 try:
-                    PackageFile(path=converted_file_path)
+                    PackageFile(path=converted_file_path, connection=transaction)
                 except:
                     pass
                 else:
@@ -593,7 +597,11 @@ class Package(SQLObject):
                 item.removeFileFlag(flag)
             print "Removed file flag(s) from: %s" % (item.path)
         else:
-            choice = choices[selection - 1]
+            try:
+                choice = choices[selection - 1]
+            except IndexError:
+                print "Invalid selection."
+                sys.exit(1)
             item.addFileFlag(choice)
             print "Applied %s flag to: %s" % (choice.name, item.path)
     
@@ -613,10 +621,16 @@ class Package(SQLObject):
         print "Cleared all file flags."
   
 class PackageFile(SQLObject):
+    class sqlmeta:
+        lazyUpdate = True
+        
     path = StringCol(unique=True)
     flags = RelatedJoin('FileFlag')
     
 class FileFlag(SQLObject):
+    class sqlmeta:
+        lazyUpdate = True
+        
     name = StringCol()
     package_files = RelatedJoin('PackageFile')
 

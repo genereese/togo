@@ -1,0 +1,13 @@
+.TH TOGO 1 "9/18/13" Linux "TOGO Reference"
+.SH NAME
+togo \- A script to assist and greatly simply the creation of RPMs
+.SH FILES
+.B togo
+.SH FILE DESCRIPTION
+.IP "togo"
+Run 'togo' without any arguments to see usage instructions.
+.SH QUICK START
+See the Quick Start document at: https://code.google.com/p/togorpm/wiki/QuickStart
+
+.SH AUTHOR
+Gene Reese <gene.reese@xirsix.com>
