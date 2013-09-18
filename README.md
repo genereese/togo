@@ -7,7 +7,7 @@ $ git clone https://github.com/genereese/togo-rpm.git
 
 $ cd togo-rpm; ./build-togo.sh
 
-$ yum localinstall ./rpms/*.rpm
+$ sudo yum localinstall ./rpms/*.rpm
 ```
 
 ## Configuration
@@ -92,7 +92,6 @@ We want to flag the 'stat.sh' script as a regular file, so we enter option '1'.
 
 Please select a flag to apply: 1
 Applied REGULAR flag to: /usr/local/bin/stat.sh
-
 ```
 
 Technically, you may now build your RPM with 'togo -a', but you will probably want to update your version information, description, compression, etc. first:
@@ -185,7 +184,6 @@ user	0m0.072s
 sys	0m0.083s
 
 Any generated RPMs are in: ./rpms
-
 ```
 
 If all went well, you should either see your RPM in ./rpms, or you'll see an error message as to why the build failed:
@@ -211,7 +209,6 @@ Packager    : Gene Reese <gene.reese@xirsix.com>
 Summary     : None
 Description :
 None
-
 ```
 
 ## Additional Information
