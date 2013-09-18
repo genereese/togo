@@ -1,5 +1,8 @@
 %changelog
 * Wed Sep 18 2013 Gene Reese <gene.reese@xirsix.com>
+- Fixed duplicate file table entries for flagged files
+
+* Wed Sep 18 2013 Gene Reese <gene.reese@xirsix.com>
 - Added transaction functionality to file table updates to vastly increase processing speed over large amounts of files
 - Added a simple man-page
 

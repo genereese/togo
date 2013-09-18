@@ -602,6 +602,8 @@ class Package(SQLObject):
             except IndexError:
                 print "Invalid selection."
                 sys.exit(1)
+            for flag in item.flags:
+                item.removeFileFlag(flag)
             item.addFileFlag(choice)
             print "Applied %s flag to: %s" % (choice.name, item.path)
     
