@@ -1,7 +1,7 @@
-# What is togo-rpm?
+# What is togo?
 Want to create an RPM to deploy your software and don't want to spend hours learning how to do it?
 
-Use togo-rpm! You can have **your first RPM** built and ready to install **in less than 5 minutes.**
+Use togo! You can have **your first RPM** built and ready to install **in less than 5 minutes.**
 
 Examples:
 * A sysadmin who has a script or group of scripts he wants to add to a yum repository
@@ -13,9 +13,9 @@ Examples:
 Clone the repo, run the build script, and install the RPM
 
 ```
-$ git clone https://github.com/genereese/togo-rpm.git
+$ git clone https://github.com/genereese/togo.git
 
-$ cd togo-rpm; ./build-togo.sh
+$ cd togo; ./build-togo.sh
 
 $ sudo yum localinstall ./rpms/*.rpm
 ```
