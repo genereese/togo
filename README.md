@@ -1,3 +1,7 @@
+### Note
+If you have any questions or problems, please email me at gene.reese@xirsix.com so that I may address them.
+
+
 # What is togo?
 Want to create an RPM to deploy your software and don't want to spend hours learning how to do it?
 
