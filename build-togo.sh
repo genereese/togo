@@ -6,7 +6,7 @@ echo
 
 rpm -q rpm-build python-sqlobject
 
-if [ $? -eq 1 ]; then
+if [ $? -ne 0 ]; then
 	echo
 	echo "ERROR: Build dependencies not met."
 	echo
