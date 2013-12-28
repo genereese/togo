@@ -14,7 +14,7 @@ if [ $? -eq 1 ]; then
 	echo
 else
 	echo
-	echo "Attempting to building the togo RPM..."
+	echo "Attempting to build the togo RPM..."
 	./root/usr/local/bin/togo -a
 	echo
 fi
