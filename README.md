@@ -31,7 +31,32 @@ $ togo --configure
 
 You will be prompted for your name and an email address. This information is only used to populate some default variables in your RPM configuration file (known as a '.spec' file), and is not used for any other purpose.
 
-### Project Creation
+# Super-Fast Example
+
+1) Create the project directory using the script:
+```bash
+$ togo -c my-project; cd my-project
+```
+2) Copy your files into the build root:
+```bash
+$ mkdir -p root/usr/local/bin; cp /path/to/myfile root/usr/local/bin/
+```
+3) Flag the file(s) to include them in the RPM
+```bash
+$ togo -f root/usr/local/bin/myfile
+```
+4) Modify the spec to change your version/release/summary, etc.
+```bash
+$ vi spec/header
+```
+5) The build the RPM
+```bash
+$ togo -a
+```
+-and your RPM is spit out into the rpms directory.
+
+
+# Detailed Example
 Once togo is configured, you can create your first project. To do this, move to the desired parent directory and run togo with the '-c' option. Whatever you pass as the argument will be the name of your new RPM. You can change it later, but it's easiest to start out with the proper name:
 
 ```bash
