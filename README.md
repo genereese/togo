@@ -49,7 +49,7 @@ $ togo -f root/usr/local/bin/myfile
 ```bash
 $ vi spec/header
 ```
-5) The build the RPM
+5) Build the RPM
 ```bash
 $ togo -a
 ```
