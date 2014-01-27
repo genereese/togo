@@ -94,6 +94,8 @@ $ mkdir -p root/usr/local/bin
 $ touch root/usr/local/bin/stat.sh
 ```
 
+If you're not sure where you should place your files, have a look at the Filesystem Hierarchy Standard (http://www.pathname.com/fhs/pub/fhs-2.3.html).
+
 After you copy your files into your root directory structure, you will need to flag them to ensure they are included in your package. You accomplish this with the '-f' option.
 
 You may individually flag files or you may flag entire directories. If you flag a directory, you will not need to flag the files in that directory as they will automatically be included. You just want to make sure that you are not flagging directories which are owned by other packages (such as /etc).
