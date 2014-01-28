@@ -51,7 +51,7 @@ $ vi spec/header
 ```
 5) Build the RPM
 ```bash
-$ togo -a
+$ togo -bp
 ```
 -and your RPM is spit out into the rpms directory.
 
@@ -104,12 +104,6 @@ You may individually flag files or you may flag entire directories. If you flag 
 # Flag the stat.sh file
 $ togo -f root/usr/local/bin/stat.sh
 
-Updating file list...
-Added '/usr' to file table.
-Added '/usr/local' to file table.
-Added '/usr/local/bin' to file table.
-Added '/usr/local/bin/stat.sh' to file table.
-
 Options:
 --------
 1) REGULAR
@@ -130,7 +124,7 @@ We want to flag the 'stat.sh' script as a regular file, so we enter option '1'.
 ...
 
 Please select a flag to apply: 1
-Applied REGULAR flag to: /usr/local/bin/stat.sh
+ Applied REGULAR flag to: /usr/local/bin/stat.sh
 ```
 
 Technically, you may now build your RPM with 'togo -a', but you will probably want to update your version information, description, compression, etc. first:
@@ -142,7 +136,7 @@ $ vi spec/header
 Once you have modified your header file, simply run 'togo -a' from your root package directory to create the RPM:
 
 ```bash
-$ togo -a
+$ togo -bp
 
 Updating file list...
 Cleaning Metadata
