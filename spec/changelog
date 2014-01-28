@@ -2,6 +2,7 @@
 * Tue Jan 28 2014 Gene Reese <gene.reese@xirsix.com>
 - Re-formatted help display and options for easier reading/use
 - Removed unused help options from display
+- Removed explicit Provides: xyz from generated spec
 
 * Wed Sep 18 2013 Gene Reese <gene.reese@xirsix.com>
 - Fixed duplicate file table entries for flagged files

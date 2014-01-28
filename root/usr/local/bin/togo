@@ -316,10 +316,6 @@ class Package(SQLObject):
             {'#Requires' : 'bash, python >= 2.7'},
             {'' : ''},
             
-            {'#': 'You probably do not need to change this'},
-            {'Provides' : self.package_name},
-            {'' : ''},
-            
             {'#': 'A more verbose description of your package'},
             {'%' : r'description'},
             {'' : 'None'},
