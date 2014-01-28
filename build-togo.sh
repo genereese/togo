@@ -15,6 +15,6 @@ if [ $? -ne 0 ]; then
 else
 	echo
 	echo "Attempting to build the togo RPM..."
-	./root/usr/local/bin/togo -a
+	./root/usr/local/bin/togo -bp
 	echo
 fi
