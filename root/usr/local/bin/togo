@@ -328,8 +328,8 @@ class Package(SQLObject):
         
         self.default_spec_sections = [
             {'prep' : r'%prep' +'\n' + r'%setup -q -c'},
-            {'build' : r'%build' + '\n' + r'rsync -a . %{buildroot}/'},
-            {'install' : r'%install'},
+            {'build' : r'%build'},
+            {'install' : r'%install' + '\n' + r'rsync -a . %{buildroot}/'},
             {'clean' : r'%clean' + '\n' + r'rm -rf %{buildroot}'},
             {'pre' : r'%pre'},
             {'post' : r'%post'},
