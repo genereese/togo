@@ -5,7 +5,7 @@ Want to create an RPM to deploy your software and don't want to spend hours lear
 
 Use Togo! You can have **your first RPM** built and ready to install **in less than 5 minutes.**
 
-Who can use Togo?
+Who might find Togo useful?
 * A sysadmin who has a script or group of scripts he wants to add to a yum repository
 * A developer who has pre-compiled binaries he wants to package up and install on several systems
 * Anyone who wants to keep track of everything on their system(s) with RPM
