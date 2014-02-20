@@ -41,7 +41,7 @@ $ togo -c my-project; cd my-project
 ```bash
 $ mkdir -p root/usr/local/bin; cp /path/to/myfile root/usr/local/bin/
 ```
-3) Flag the file(s) to include them in the RPM
+3) Flag the file(s) and/or directories to include them in the RPM
 ```bash
 $ togo -f root/usr/local/bin/myfile
 ```
