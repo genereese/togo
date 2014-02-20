@@ -127,13 +127,13 @@ Please select a flag to apply: 1
  Applied REGULAR flag to: /usr/local/bin/stat.sh
 ```
 
-Technically, you may now build your RPM with 'togo -a', but you will probably want to update your version information, description, compression, etc. first:
+Technically, you may now build your RPM with 'togo -bp', but you will probably want to update your version information, description, compression, etc. first:
 
 ```bash
 $ vi spec/header
 ```
 
-Once you have modified your header file, simply run 'togo -a' from your root package directory to create the RPM:
+Once you have modified your header file, simply run 'togo -bp' from your root package directory to create the RPM:
 
 ```bash
 $ togo -bp
