@@ -1,9 +1,9 @@
 If you have any questions, problems, suggestions, or just plain like the software, please email me at gene.reese@xirsix.com to let me know; I base how much work I put in on my projects off how many people find them useful.
 
-# What is togo?
+# What is Togo?
 Want to create an RPM to deploy your software and don't want to spend hours learning how to do it?
 
-Use togo! You can have **your first RPM** built and ready to install **in less than 5 minutes.**
+Use Togo! You can have **your first RPM** built and ready to install **in less than 5 minutes.**
 
 Who can use Togo?
 * A sysadmin who has a script or group of scripts he wants to add to a yum repository
