@@ -268,6 +268,7 @@ Examples include:
 
   * Starting/Stopping services
   * Altering configuration files
+  * Changing file/directory ownership/permissions
 
 ##### preun
 This file is an empty shell script that may be used to ensure certain things are done before your RPM is removed from a system.
