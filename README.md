@@ -5,6 +5,8 @@ Want to create an RPM to deploy your software and don't want to spend hours lear
 
 Use Togo! You can have **your first RPM** built and ready to install **in less than 5 minutes.** (Scroll down for a super-fast example.)
 
+### Philosophy
+
 Traditionally, RPM creation has been overly complicated. Best practices are largely non-existent and documentation mainly consists of either incredibly dry reading, or random anecdotes from people who have just done it their own way. Togo seeks to help both new-comers and experienced RPM builders standardize and organize their build process by making it as simple and reproducible as possible.
 
 Togo does not lock you into any software magic; it simply automates the tasks that have to be performed most often and does so in a sane manner. If you simply want to use Togo to generate a basic spec file for you to use, you may do just that. Or, if you want togo to handle your entire project, you can do that as well. Feel as if your project has outgrown Togo and you need to do your own thing? Go for it!
