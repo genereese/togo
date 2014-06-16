@@ -5,14 +5,18 @@ import logging
 import optparse
 import os
 import re
+import subprocess
 import sys
 
-from sqlobject import *
+try:
+    from sqlobject import *
+except ImportError:
+    raise exceptions.Exception("'python-sqlobject' package not installed.")
 
 DEBUG=True
 
 # Configure logger
-logging.basicConfig(format="%(message)s", level=logging.INFO)
+logging.basicConfig(format="%(message)s", level=logging.DEBUG)
 log = logging.getLogger()
 
 APPLICATION_DATABASE_NAME = 'helper.db'
@@ -38,7 +42,7 @@ class Application:
         
         # Set up the option parser to parse CLI options
         p = optparse.OptionParser(description="A simple RPM creation helper.")
-        p.add_option('--configure', action="store_true", help='(re)configure togo for this user')
+        p.add_option('--configure', action="store_true", help="(re)configure togo's user information")
         
         create_group = optparse.OptionGroup(p, "Create Project")
         create_group.add_option('-c', dest='create', help="create a new project")
@@ -99,7 +103,8 @@ class Application:
                 self.generateSpec(self.options.spec)
                 
             else:
-                log.error("You must provide an object to build.")
+                log.error("ERROR: You must provide an object to build.")
+                log.error("")
                 sys.exit(1)
         
         elif (self.options.flag):
@@ -137,7 +142,7 @@ class Application:
         sqlhub.processConnection = self.connection
         
         class Preference(SQLObject):
-            """ Contains the user-level preferences for the application """
+            """ Contains the user-level preferences for the applicatiGrover Norquist called the episode "the worst attempt to blame technology in service of a cover-up since the infamouon """
             full_name = StringCol()            
             email_address = StringCol()
 
@@ -192,8 +197,9 @@ class Application:
         FileFlag.createTable(ifNotExists=True)
         
         # Initialize the flag types
-        FileFlag(name = "REGULAR")
+        FileFlag(name = "EXCLUDE")
         FileFlag(name = "%config")
+        FileFlag(name = "%dir")
         FileFlag(name = "%doc")
         
     def createPackage(self, name):
@@ -214,6 +220,7 @@ class Application:
         """ Generates a spec file by the given name """
         log.info("Generating spec file: %s" % (spec_file))
         p = Package.get(1)
+        self.updateFileDatabase()
         p.generateSpec(spec_file)
         return spec_file
     
@@ -270,6 +277,7 @@ class Package(SQLObject):
         default_changelog_date_string += "\n- Initial version."
         
         self.default_spec_vars = [
+
             {'#': 'The name of your package'},
             {'Name' : self.package_name},
             {'' : ''},
@@ -307,7 +315,7 @@ class Package(SQLObject):
             {'' : ''},
             
             {'#': 'Change this extension to change the compression level in your RPM'},
-            {'#': 'tar / tar.gz / tar.bz2'},
+            {'#': ' tar / tar.gz / tar.bz2'},
             {'Source0' : r'%{name}.tar'},
             {'' : ''},
             
@@ -322,8 +330,12 @@ class Package(SQLObject):
             {'' : ''},
             
             {'#': 'You probably do not need to change this'},
-            {'' : r'%define debug_package %{nil}'},
+            {'%' : r'define debug_package %{nil}'},
             {'' : ''},
+            
+            {'#': 'If you are having trouble building a package and need to disable'},
+            {'#': ' automatic dependency/provides checking, change this to 0'},
+            {'' : r'AutoReqProv: 1'},
             ]
         
         self.default_spec_sections = [
@@ -371,26 +383,42 @@ class Package(SQLObject):
             fd.write(File(os.path.join(self.package_path_spec, item.keys()[0])
                           + self.spec_section_extension).read())
             fd.write('\n')
-        self.updateFileList()
         fd.write(r'%files')
         fd.write('\n')
         flags = list(FileFlag.select())
-        for flag in flags:
-            flagged_items = flag.package_files
-            for flagged_item in flagged_items:
-                if (flag.name == 'REGULAR'):
-                    write_string = flagged_item.path
-                else:
-                    write_string = "%s %s" % (flag.name, flagged_item.path)
-                    if (flag.name == "%doc"):
-                        write_string += '.gz'
-                fd.write(write_string)
-                fd.write('\n')
+        files = []
+        
+        # Iterate over each file and check for file flags to generate
+        #  the %files directive
+        for file in list(PackageFile.select()):
+            if (len(file.flags)):
+                for flag in file.flags:
+                    if (flag.name == "EXCLUDE"):
+                        write_string = None
+                    else:
+                        write_string = "%s %s" % (flag.name, file.path)
+                        if (flag.name == "%doc"):
+                            write_string += ".gz"
+            else:
+                write_string = file.path
+                
+            if (write_string):
+                files.append(write_string)
+
+        files.sort()
+        for file in files:
+            fd.write(file)
+            fd.write('\n')
         fd.write('\n')
-        fd.close()        
+        fd.close()
+        log.info("Done!")
     
     def updateFileList(self, transaction=None):
-        si, so, se = os.popen3('find %s | grep -v \.svn' % (self.package_path_root))
+        log.info("Scanning for file structure changes...")
+        process = subprocess.Popen('find %s | grep -v \.svn' % (self.package_path_root), shell=True,
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   close_fds=True)
+        si, so, se = process.stdin, process.stdout, process.stderr
         current_file_list = so.readlines()
         current_files = {}
         prefix_length = len(self.package_path_root)
@@ -405,19 +433,25 @@ class Package(SQLObject):
             try:
                 current_files[file.path]
             except:
-                PackageFile.deleteBy(path=file.path)
-                log.debug("Removed '%s' from file table." % (file.path))
+                pf = PackageFile.selectBy(path=file.path, connection=transaction)[0]
+                PackageFile.delete(pf.id, connection=transaction)
+                log.info("  Removed '%s'" % (file.path))
         
         # Add new files to package database
+        dir_file_flag = FileFlag.select(FileFlag.q.name=="%dir")[0]
         for file in current_file_list:
             converted_file_path = file.strip()[prefix_length:]
             if (converted_file_path != ''):
                 try:
-                    PackageFile(path=converted_file_path, connection=transaction)
+                    pf = PackageFile(path=converted_file_path, connection=transaction)
                 except:
                     pass
                 else:
-                    log.debug("Added '%s' to file table." % (converted_file_path))
+                    if (os.path.isdir(file.strip())):
+                        pf.addFileFlag(dir_file_flag)
+                    log.info("  Added '%s'" % (converted_file_path))
+                    
+        log.info(" Scan complete.")
         
     def generateMetadata(self, spec_file):
         self.cleanRedHatDir()
@@ -501,11 +535,7 @@ class Package(SQLObject):
         log.info('')
         log.info('Setting Up Environment Variables')
         log.info('==================================')
-        log.info(' Setting \'%_usr\' macro')
         fd = open(macros_file, 'w')
-        fd.write(r"%_usr           ")
-        fd.write(os.path.join(os.path.abspath(self.package_path_meta), 'usr'))
-        fd.write('\n')
         log.info(' Setting gpg key macros')
         fd.write(r"%_signature     gpg")
         fd.write("\n")
@@ -515,9 +545,6 @@ class Package(SQLObject):
         fd.write(identity + '@' + hostname)
         fd.write('\n')
         fd.write("%_gpgbin        /usr/bin/gpg")
-        fd.write('\n')
-        fd.write("%_topdir        ")
-        fd.write("%s" % (os.path.join(os.getcwd(), 'meta', 'redhat')))
         fd.close()
         log.info('')
     
@@ -531,7 +558,14 @@ class Package(SQLObject):
         log.info('Building the RPM')
         log.info('==================================')
         spec_path = os.path.join(self.package_path_meta, 'redhat', 'SPECS', '*.spec')
-        os.system('time rpmbuild -bb %s' % (spec_path))
+        exec_string = "time rpmbuild --define '_topdir %s' -bb %s" % (
+            os.path.join(os.getcwd(), 'meta', 'redhat'),
+            spec_path)
+        log.info("")
+        log.info("Executing:")
+        log.info("%s" % (exec_string))
+        log.info("")
+        os.system(exec_string)
         log.info('')
     
     def moveRPMs(self):
@@ -579,7 +613,7 @@ class Package(SQLObject):
         elif (selection == -1):
             for flag in item.flags:
                 item.removeFileFlag(flag)
-            print "Removed file flag(s) from: %s" % (item.path)
+            print "Removed file flag from: %s" % (item.path)
         else:
             try:
                 choice = choices[selection - 1]
@@ -597,10 +631,12 @@ class Package(SQLObject):
         for flag in flags:
             flagged_items = flag.package_files
             if (len(flagged_items)):
-                log.info("%s files:" % (flag.name))
+                log.info("%s:" % (flag.name))
             for flagged_item in flagged_items:
                 total_files += 1
                 log.info(" %s" % (flagged_item.path))
+            if (flagged_items):
+                log.info("")
         if not (total_files):
             log.info("No files have been flagged.")
     

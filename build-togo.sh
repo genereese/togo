@@ -10,7 +10,13 @@ if [ $? -ne 0 ]; then
 	echo
 	echo "ERROR: Build dependencies not met."
 	echo
-	echo "  Please ensure the above packages are installed before building."
+	echo "  Please ensure that the 'rpm-build' and 'python-sqlobject' rpms"
+	echo "  are installed before building."
+	echo
+	echo "  If you have satisfied these requirements via some other means"
+	echo "  (easy_install, etc.) you may try to build the RPM using:"
+	echo
+	echo "  ./root/usr/local/bin/togo -bp"
 	echo
 else
 	echo
