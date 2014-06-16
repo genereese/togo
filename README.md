@@ -137,6 +137,8 @@ Please select a flag to apply: 1
  Applied EXCLUDE flag to: /usr
 ```
 
+-and, of course, if you want to remove a file from your RPM, simply remove it from the ./root directory tree and it will be removed from the RPM.
+
 Technically, you may now build your RPM with 'togo -bp', but you will probably want to update your version information, description, compression, etc. first:
 
 ```bash
