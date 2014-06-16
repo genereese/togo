@@ -1,13 +1,15 @@
 If you have any questions, problems, suggestions, or just plain like the software, please email me at gene.reese@xirsix.com to let me know; I base how much work I put in on my projects off how many people find them useful.
 
 # What is Togo?
-Want to create an RPM to deploy your software and don't want to spend hours learning how to do it?
+Want to create an RPM to deploy your software and don't want to spend hours learning how to do it? -or maybe you're already familiar with the process, but just want it to feel more clean and organized?
 
--or maybe you're already familiar with the process, but just want it to feel more clean and organized?
-
-Use Togo! You can have **your first RPM** built and ready to install **in less than 5 minutes.**
+Use Togo! You can have **your first RPM** built and ready to install **in less than 5 minutes.** (Scroll down for a super-fast example.)
 
 Traditionally, RPM creation has been overly complicated. Best practices are largely non-existent and documentation mainly consists of either incredibly dry reading, or random anecdotes from people who have just done it their own way. Togo seeks to help both new-comers and experienced RPM builders standardize and organize their build process by making it as simple and reproducible as possible.
+
+Togo does not lock you into any software magic; it simply automates the tasks that have to be performed most often and does so in a sane manner. If you simply want to use Togo to generate a basic spec file for you to use, you may do just that. Or, if you want togo to handle your entire project, you can do that as well. Feel as if your project has outgrown Togo and you need to do your own thing? Go for it!
+
+Use it as little or as much as you want!
 
 Who might find Togo useful?
 * A sysadmin who has a script or group of scripts he wants to add to a yum repository
