@@ -41,11 +41,7 @@ $ togo -c my-project; cd my-project
 ```bash
 $ mkdir -p root/usr/local/bin; cp /path/to/myfile root/usr/local/bin/
 ```
-3) Flag the file(s) and/or directories to include them in the RPM
-```bash
-$ togo -f root/usr/local/bin/myfile
-```
-4) Modify the spec to change your version/release/summary, etc.
+3) Modify the spec to change your version/release/summary, etc.
 ```bash
 $ vi spec/header
 ```
@@ -96,36 +92,38 @@ $ touch root/usr/local/bin/stat.sh
 
 If you're not sure where you should place your files, have a look at the Filesystem Hierarchy Standard (http://www.pathname.com/fhs/pub/fhs-2.3.html).
 
-After you copy your files into your root directory structure, you will need to flag them to ensure they are included in your package. You accomplish this with the '-f' option.
+Togo will automatically add every file/directory under the ./root directory into the RPM. This means that your RPM, by default, will claim ownership of all files and folders in the directory.
 
-You may individually flag files or you may flag entire directories. If you flag a directory, you will not need to flag the files in that directory as they will automatically be included. You just want to make sure that you are not flagging directories which are owned by other packages (such as /etc).
+Technically speaking, there is currently nothing wrong with this, but common practice (whether I agree with it or not) is to have each file/directory on the filesystem owned by only a single RPM.
+
+So, for this example, you will want to exclude '/usr', '/usr/local', and '/usr/local/bin' (I will make this process easier in the next release):
 
 ```bash
-# Flag the stat.sh file
-$ togo -f root/usr/local/bin/stat.sh
+$ togo -f root/usr
+
+Scanning for file structure changes...
+  Added '/usr'
+  Added '/usr/local'
+  Added '/usr/local/bin'
+  Added '/usr/local/bin/stat.sh'
+ Scan complete.
 
 Options:
 --------
-1) REGULAR
+1) EXCLUDE
 2) %config
-3) %doc
+3) %dir
+4) %doc
 
 -1) Clear all flags from this item
 
 0) Cancel
 
-Please select a flag to apply:
-```
-
-We want to flag the 'stat.sh' script as a regular file, so we enter option '1'.
-
-```bash
-
-...
-
 Please select a flag to apply: 1
- Applied REGULAR flag to: /usr/local/bin/stat.sh
+ Applied EXCLUDE flag to: /usr
 ```
+
+-and repeat the process for 'root/usr/local' and root/usr/local/bin'.
 
 Technically, you may now build your RPM with 'togo -bp', but you will probably want to update your version information, description, compression, etc. first:
 
@@ -138,7 +136,12 @@ Once you have modified your header file, simply run 'togo -bp' from your root pa
 ```bash
 $ togo -bp
 
-Updating file list...
+Generating spec file: generated.spec
+Scanning for file structure changes...
+ Scan complete.
+Done!
+Generating metadata using: generated.spec
+
 Cleaning Metadata
 ==================================
  Removing old files from:
@@ -146,75 +149,75 @@ Cleaning Metadata
 
 Creating Metadata Structure
 ==================================
- Creating directory structure under: /home/greese/Desktop/rpm/my-package-name/meta
-   Creating dir '/home/greese/Desktop/rpm/my-package-name/meta/redhat/BUILD'
-     Linking /home/greese/Desktop/rpm/my-package-name/meta/redhat/BUILD to /home/greese/Desktop/rpm/my-package-name/meta/usr/src/redhat/BUILD
-   Creating dir '/home/greese/Desktop/rpm/my-package-name/meta/redhat/RPMS'
-     Linking /home/greese/Desktop/rpm/my-package-name/meta/redhat/RPMS to /home/greese/Desktop/rpm/my-package-name/meta/usr/src/redhat/RPMS
-   Creating dir '/home/greese/Desktop/rpm/my-package-name/meta/redhat/SOURCES'
-     Linking /home/greese/Desktop/rpm/my-package-name/meta/redhat/SOURCES to /home/greese/Desktop/rpm/my-package-name/meta/usr/src/redhat/SOURCES
-   Creating dir '/home/greese/Desktop/rpm/my-package-name/meta/redhat/SPECS'
-     Linking /home/greese/Desktop/rpm/my-package-name/meta/redhat/SPECS to /home/greese/Desktop/rpm/my-package-name/meta/usr/src/redhat/SPECS
-   Creating dir '/home/greese/Desktop/rpm/my-package-name/meta/redhat/SRPMS'
-     Linking /home/greese/Desktop/rpm/my-package-name/meta/redhat/SRPMS to /home/greese/Desktop/rpm/my-package-name/meta/usr/src/redhat/SRPMS
-   Linking generated.spec to /home/greese/Desktop/rpm/my-package-name/meta/redhat/SPECS/generated.spec
+ Creating directory structure under: /home/greese/Desktop/rpms/my-package-name/meta
+   Creating dir '/home/greese/Desktop/rpms/my-package-name/meta/redhat/BUILD'
+   Creating dir '/home/greese/Desktop/rpms/my-package-name/meta/redhat/RPMS'
+   Creating dir '/home/greese/Desktop/rpms/my-package-name/meta/redhat/SOURCES'
+   Creating dir '/home/greese/Desktop/rpms/my-package-name/meta/redhat/SPECS'
+   Creating dir '/home/greese/Desktop/rpms/my-package-name/meta/redhat/SRPMS'
+   Linking generated.spec to /home/greese/Desktop/rpms/my-package-name/meta/redhat/SPECS/generated.spec
 
 Creating Compressed Source
 ==================================
  Compressing...
   Done
 
+Building the package...
+
 Setting Up Environment Variables
 ==================================
- Setting '%_usr' macro
  Setting gpg key macros
 
- Building the RPM
+Building the RPM
 ==================================
-Executing(%prep): /bin/sh -e /var/tmp/rpm-tmp.KEo3YD
+
+Executing:
+time rpmbuild --define '_topdir /home/greese/Desktop/rpms/my-package-name/meta/redhat' -bb ./meta/redhat/SPECS/*.spec
+
+Executing(%prep): /bin/sh -e /var/tmp/rpm-tmp.2f8iSe
 + umask 022
-+ cd /home/greese/Desktop/rpm/my-package-name/meta/redhat/BUILD
-+ cd /home/greese/Desktop/rpm/my-package-name/meta/redhat/BUILD
++ cd /home/greese/Desktop/rpms/my-package-name/meta/redhat/BUILD
++ cd /home/greese/Desktop/rpms/my-package-name/meta/redhat/BUILD
 + rm -rf my-package-name-1.0
 + /usr/bin/mkdir -p my-package-name-1.0
 + cd my-package-name-1.0
-+ /usr/bin/tar -xf /home/greese/Desktop/rpm/my-package-name/meta/redhat/SOURCES/my-package-name.tar
++ /usr/bin/tar -xf /home/greese/Desktop/rpms/my-package-name/meta/redhat/SOURCES/my-package-name.tar
 + /usr/bin/chmod -Rf a+rX,u+w,g-w,o-w .
 + exit 0
-Executing(%build): /bin/sh -e /var/tmp/rpm-tmp.mlcEGy
+Executing(%build): /bin/sh -e /var/tmp/rpm-tmp.Hhsl1Q
 + umask 022
-+ cd /home/greese/Desktop/rpm/my-package-name/meta/redhat/BUILD
++ cd /home/greese/Desktop/rpms/my-package-name/meta/redhat/BUILD
 + cd my-package-name-1.0
-+ rsync -a . /home/greese/Desktop/rpm/my-package-name/meta/redhat/BUILDROOT/my-package-name-1.0-1.x86_64/
 + exit 0
-Executing(%install): /bin/sh -e /var/tmp/rpm-tmp.7FgAyt
+Executing(%install): /bin/sh -e /var/tmp/rpm-tmp.Wgkubt
 + umask 022
-+ cd /home/greese/Desktop/rpm/my-package-name/meta/redhat/BUILD
++ cd /home/greese/Desktop/rpms/my-package-name/meta/redhat/BUILD
 + cd my-package-name-1.0
++ rsync -a . /home/greese/Desktop/rpms/my-package-name/meta/redhat/BUILDROOT/my-package-name-1.0-1.x86_64/
 + /usr/lib/rpm/brp-compress
 + /usr/lib/rpm/brp-strip /usr/bin/strip
 + /usr/lib/rpm/brp-strip-static-archive /usr/bin/strip
 + /usr/lib/rpm/brp-strip-comment-note /usr/bin/strip /usr/bin/objdump
 Processing files: my-package-name-1.0-1.noarch
-Provides: my-package-name my-package-name = 1.0-1
+Provides: my-package-name = 1.0-1
 Requires(interp): /bin/sh /bin/sh /bin/sh /bin/sh
 Requires(rpmlib): rpmlib(CompressedFileNames) <= 3.0.4-1 rpmlib(PayloadFilesHavePrefix) <= 4.0-1
 Requires(pre): /bin/sh
 Requires(post): /bin/sh
 Requires(preun): /bin/sh
 Requires(postun): /bin/sh
-Checking for unpackaged file(s): /usr/lib/rpm/check-files /home/greese/Desktop/rpm/my-package-name/meta/redhat/BUILDROOT/my-package-name-1.0-1.x86_64
-Wrote: /home/greese/Desktop/rpm/my-package-name/meta/redhat/RPMS/noarch/my-package-name-1.0-1.noarch.rpm
-Executing(%clean): /bin/sh -e /var/tmp/rpm-tmp.1HQDWj
+Checking for unpackaged file(s): /usr/lib/rpm/check-files /home/greese/Desktop/rpms/my-package-name/meta/redhat/BUILDROOT/my-package-name-1.0-1.x86_64
+Wrote: /home/greese/Desktop/rpms/my-package-name/meta/redhat/RPMS/noarch/my-package-name-1.0-1.noarch.rpm
+Executing(%clean): /bin/sh -e /var/tmp/rpm-tmp.mEydfI
 + umask 022
-+ cd /home/greese/Desktop/rpm/my-package-name/meta/redhat/BUILD
++ cd /home/greese/Desktop/rpms/my-package-name/meta/redhat/BUILD
 + cd my-package-name-1.0
-+ rm -rf /home/greese/Desktop/rpm/my-package-name/meta/redhat/BUILDROOT/my-package-name-1.0-1.x86_64
++ rm -rf /home/greese/Desktop/rpms/my-package-name/meta/redhat/BUILDROOT/my-package-name-1.0-1.x86_64
 + exit 0
 
-real	0m0.217s
-user	0m0.072s
-sys	0m0.083s
+real	0m0.172s
+user	0m0.057s
+sys	0m0.051s
 
 Any generated RPMs are in: ./rpms
 ```
