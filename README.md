@@ -12,11 +12,11 @@ Who might find Togo useful?
 
 ### Philosophy
 
-Traditionally, RPM creation has been overly complicated. Best practices are largely non-existent and documentation mainly consists of either incredibly dry reading, or random anecdotes from people who have just done it their own way. Togo seeks to help both new-comers and experienced RPM builders standardize and organize their build process by making it as simple and reproducible as possible.
+Traditionally, RPM creation has been overly complicated. Best practices are largely non-existent and documentation mainly consists of either incredibly dry reading, or random anecdotes from people who have done it their own way. Togo seeks to help both new-comers and experienced RPM builders standardize and organize their build process by making it as simple and reproducible as possible.
 
-Togo does not lock you into any software magic; it simply automates the tasks that have to be performed most often and does so in a sane manner. If you simply want to use Togo to generate a basic spec file for you to use, you may do just that. Or, if you want togo to handle your entire project, you can do that as well. Feel as if your project has outgrown Togo and you need to do your own thing? Go for it!
+Other softwares have tried to bundle the packaging process into a more generic wrapper to accomodate multiple distros (debian packages, etc.), but this process dilutes the specialization that goes into focusing on a single package format.
 
-Use it as little or as much as you want!
+Togo only handles RPMs, and it handles them well. By automating the most complex and time-consuming tasks (setting up your build environment, bundling and tarring source files, generating your spec file and file lists), Togo deals with all the stupid crap that you don't want to and lets you focus on your software.
 
 # Getting Started
 ### Installation
