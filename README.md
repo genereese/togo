@@ -41,7 +41,15 @@ $ togo -c my-project; cd my-project
 ```bash
 $ mkdir -p root/usr/local/bin; cp /path/to/myfile root/usr/local/bin/
 ```
-3) Modify the spec to change your version/release/summary, etc.
+
+3) Exclude the the ownership of '/usr', '/usr/local', and '/usr/local/bin' from your RPM:
+```bash
+$ togo -f root/usr/local/bin
+...
+```
+-and select option '1' to exclude (the exclude will cascade down and exclude the parent directories)
+
+4) Modify the spec to change your version/release/summary, etc.
 ```bash
 $ vi spec/header
 ```
@@ -92,14 +100,14 @@ $ touch root/usr/local/bin/stat.sh
 
 If you're not sure where you should place your files, have a look at the Filesystem Hierarchy Standard (http://www.pathname.com/fhs/pub/fhs-2.3.html).
 
-Togo will automatically add every file/directory under the ./root directory into the RPM. This means that your RPM, by default, will claim ownership of all files and folders in the directory.
+Togo will automatically add every file/directory under the ./root directory into the RPM. This means that your RPM, by default, will claim ownership of all files and folders in the ./root directory.
 
-Technically speaking, there is currently nothing wrong with this, but common practice (whether I agree with it or not) is to have each file/directory on the filesystem owned by only a single RPM.
+Technically speaking, there is currently nothing wrong with this, but common practice is to have each file/directory on the filesystem owned by only a single RPM.
 
-So, for this example, you will want to exclude '/usr', '/usr/local', and '/usr/local/bin' (I will make this process easier in the next release):
+So, for this example, you will want to exclude '/usr', '/usr/local', and '/usr/local/bin'. This is actually very easy as the exclude process will cascade up the directory tree:
 
 ```bash
-$ togo -f root/usr
+$ togo -f root/usr/local/bin
 
 Scanning for file structure changes...
   Added '/usr'
@@ -120,10 +128,10 @@ Options:
 0) Cancel
 
 Please select a flag to apply: 1
+ Applied EXCLUDE flag to: /usr/local/bin
+ Applied EXCLUDE flag to: /usr/local
  Applied EXCLUDE flag to: /usr
 ```
-
--and repeat the process for 'root/usr/local' and root/usr/local/bin'.
 
 Technically, you may now build your RPM with 'togo -bp', but you will probably want to update your version information, description, compression, etc. first:
 
