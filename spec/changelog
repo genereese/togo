@@ -1,5 +1,8 @@
 %changelog
 * Sun Jun 15 2014 Gene Reese <gene.reese@xirsix.com>
+- Added cascading exclude flags for directories
+
+* Sun Jun 15 2014 Gene Reese <gene.reese@xirsix.com>
 - Overhaul of file-related helper database information (see: https://github.com/genereese/togo)
 - Removed _topdir and _usr directive definitions from ~/.rpmmacros
 - Modified installation script to be less restrictive for other distros

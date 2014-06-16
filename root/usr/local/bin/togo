@@ -334,8 +334,8 @@ class Package(SQLObject):
             {'' : ''},
             
             {'#': 'If you are having trouble building a package and need to disable'},
-            {'#': ' automatic dependency/provides checking, change this to 0'},
-            {'' : r'AutoReqProv: 1'},
+            {'#': ' automatic dependency/provides checking, uncomment this:'},
+            {'#' : r'AutoReqProv: no'},
             ]
         
         self.default_spec_sections = [
@@ -620,10 +620,25 @@ class Package(SQLObject):
             except IndexError:
                 print "Invalid selection."
                 sys.exit(1)
-            for flag in item.flags:
-                item.removeFileFlag(flag)
-            item.addFileFlag(choice)
-            log.info(" Applied %s flag to: %s" % (choice.name, item.path))
+            # If we are excluding, cascade the exclude down the directory tree
+            if (choice.name == "EXCLUDE"):
+                while (True):
+                    for flag in item.flags:
+                        item.removeFileFlag(flag)
+                    item.addFileFlag(choice)
+                    log.info(" Applied %s flag to: %s" % (choice.name, item.path))
+                    basename = os.path.dirname(item.path)
+                    try:
+                        item = list(PackageFile.selectBy(path=basename))[0]
+                    except IndexError:
+                        break
+            else:
+                # Clear existing file flag
+                for flag in item.flags:
+                    item.removeFileFlag(flag)
+                    # Set new file flag
+                item.addFileFlag(choice)
+                log.info(" Applied %s flag to: %s" % (choice.name, item.path))
     
     def listFlaggedItems(self):
         flags = list(FileFlag.select())
