@@ -143,7 +143,7 @@ Technically, you may now build your RPM with 'togo -bp', but you will probably w
 $ vi spec/header
 ```
 
-Once you have modified your header file, simply run 'togo -bp' from your root package directory to create the RPM:
+Once you have modified your header file, simply run 'togo -bp' from your togo package directory to create the RPM:
 
 ```bash
 $ togo -bp
