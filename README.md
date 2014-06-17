@@ -1,14 +1,22 @@
 If you have any questions, problems, suggestions, or just plain like the software, please email me at gene.reese@xirsix.com to let me know; I base how much work I put in on my projects off how many people find them useful.
 
 # What is Togo?
-Want to create an RPM to deploy your software and don't want to spend hours learning how to do it?
+Want to create an RPM to deploy your software and don't want to spend hours learning how to do it? -or maybe you're already familiar with the process, but just want it to feel more clean and organized?
 
-Use Togo! You can have **your first RPM** built and ready to install **in less than 5 minutes.**
+Use Togo! You can have **your first RPM** built and ready to install **in less than 5 minutes.** (Scroll down for a super-fast example.)
 
 Who might find Togo useful?
 * A sysadmin who has a script or group of scripts he wants to add to a yum repository
 * A developer who has pre-compiled binaries he wants to package up and install on several systems
 * Anyone who wants to keep track of everything on their system(s) with RPM
+
+### Philosophy
+
+Traditionally, RPM creation has been overly complicated. Best practices are largely non-existent and documentation mainly consists of either incredibly dry reading, or random anecdotes from people who have done it their own way. Togo seeks to help both new-comers and experienced RPM builders standardize and organize their build process by making it as simple and reproducible as possible.
+
+Other softwares have tried to bundle the packaging process into a more generic wrapper to accomodate multiple distros (debian packages, etc.), but this process dilutes the specialization that goes into focusing on a single package format.
+
+Togo only handles RPMs, and it handles them well. By automating the most complex and time-consuming tasks (setting up your build environment, bundling and tarring source files, generating your spec file and file lists), Togo deals with all the stupid crap that you don't want to and lets you focus on your software.
 
 # Getting Started
 ### Installation
@@ -41,7 +49,15 @@ $ togo -c my-project; cd my-project
 ```bash
 $ mkdir -p root/usr/local/bin; cp /path/to/myfile root/usr/local/bin/
 ```
-3) Modify the spec to change your version/release/summary, etc.
+
+3) Exclude the the ownership of '/usr', '/usr/local', and '/usr/local/bin' from your RPM:
+```bash
+$ togo -f root/usr/local/bin
+...
+```
+-and select option '1' to exclude (the exclude will cascade down and exclude the parent directories)
+
+4) Modify the spec to change your version/release/summary, etc.
 ```bash
 $ vi spec/header
 ```
@@ -92,14 +108,14 @@ $ touch root/usr/local/bin/stat.sh
 
 If you're not sure where you should place your files, have a look at the Filesystem Hierarchy Standard (http://www.pathname.com/fhs/pub/fhs-2.3.html).
 
-Togo will automatically add every file/directory under the ./root directory into the RPM. This means that your RPM, by default, will claim ownership of all files and folders in the directory.
+Togo will automatically add every file/directory under the ./root directory into the RPM. This means that your RPM, by default, will claim ownership of all files and folders in the ./root directory.
 
-Technically speaking, there is currently nothing wrong with this, but common practice (whether I agree with it or not) is to have each file/directory on the filesystem owned by only a single RPM.
+Technically speaking, there is currently nothing wrong with this, but common practice is to have each file/directory on the filesystem owned by only a single RPM.
 
-So, for this example, you will want to exclude '/usr', '/usr/local', and '/usr/local/bin' (I will make this process easier in the next release):
+So, for this example, you will want to exclude '/usr', '/usr/local', and '/usr/local/bin'. This is actually very easy as the exclude process will cascade up the directory tree:
 
 ```bash
-$ togo -f root/usr
+$ togo -f root/usr/local/bin
 
 Scanning for file structure changes...
   Added '/usr'
@@ -120,10 +136,12 @@ Options:
 0) Cancel
 
 Please select a flag to apply: 1
+ Applied EXCLUDE flag to: /usr/local/bin
+ Applied EXCLUDE flag to: /usr/local
  Applied EXCLUDE flag to: /usr
 ```
 
--and repeat the process for 'root/usr/local' and root/usr/local/bin'.
+-and, of course, if you want to remove a file from your RPM, simply remove it from the ./root directory tree and it will be removed from the RPM.
 
 Technically, you may now build your RPM with 'togo -bp', but you will probably want to update your version information, description, compression, etc. first:
 
@@ -131,7 +149,7 @@ Technically, you may now build your RPM with 'togo -bp', but you will probably w
 $ vi spec/header
 ```
 
-Once you have modified your header file, simply run 'togo -bp' from your root package directory to create the RPM:
+Once you have modified your header file, simply run 'togo -bp' from your togo package directory to create the RPM:
 
 ```bash
 $ togo -bp
