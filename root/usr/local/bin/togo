@@ -16,7 +16,7 @@ except ImportError:
 DEBUG=True
 
 # Configure logger
-logging.basicConfig(format="%(message)s", level=logging.DEBUG)
+logging.basicConfig(format="%(message)s", level=logging.INFO)
 log = logging.getLogger()
 
 APPLICATION_DATABASE_NAME = 'helper.db'
@@ -415,7 +415,7 @@ class Package(SQLObject):
     
     def updateFileList(self, transaction=None):
         log.info("Scanning for file structure changes...")
-        process = subprocess.Popen('find %s | grep -v \.svn' % (self.package_path_root), shell=True,
+        process = subprocess.Popen('find %s' % (self.package_path_root), shell=True,
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                    close_fds=True)
         si, so, se = process.stdin, process.stdout, process.stderr
@@ -435,7 +435,7 @@ class Package(SQLObject):
             except:
                 pf = PackageFile.selectBy(path=file.path, connection=transaction)[0]
                 PackageFile.delete(pf.id, connection=transaction)
-                log.info("  Removed '%s'" % (file.path))
+                log.debug("  Removed '%s'" % (file.path))
         
         # Add new files to package database
         dir_file_flag = FileFlag.select(FileFlag.q.name=="%dir")[0]
@@ -447,9 +447,9 @@ class Package(SQLObject):
                 except:
                     pass
                 else:
-                    if (os.path.isdir(file.strip())):
+                    if (os.path.isdir(file.strip()) and not os.path.islink(file.strip())):
                         pf.addFileFlag(dir_file_flag)
-                    log.info("  Added '%s'" % (converted_file_path))
+                    log.debug("  Added '%s'" % (converted_file_path))
                     
         log.info(" Scan complete.")
         

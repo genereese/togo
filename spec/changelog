@@ -1,4 +1,8 @@
 %changelog
+* Tue Jun 17 2014 Gene Reese <gene.reese@xirsix.com>
+- Corrected bug regarding storing symlinks in the file flag database
+- Hid unnecessary debug output for several commands
+
 * Sun Jun 15 2014 Gene Reese <gene.reese@xirsix.com>
 - Added cascading exclude flags for directories
 
