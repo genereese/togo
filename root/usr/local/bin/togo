@@ -396,11 +396,12 @@ class Package(SQLObject):
                     if (flag.name == "EXCLUDE"):
                         write_string = None
                     else:
-                        write_string = "%s %s" % (flag.name, file.path)
+                        write_string = "%s %s" % (flag.name, '"' + file.path)
                         if (flag.name == "%doc"):
                             write_string += ".gz"
+                        write_string += '"'
             else:
-                write_string = file.path
+                write_string = '"' + file.path '"'
                 
             if (write_string):
                 files.append(write_string)
