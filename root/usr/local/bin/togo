@@ -13,7 +13,7 @@ try:
 except ImportError:
     raise exceptions.Exception("'python-sqlobject' package not installed.")
 
-DEBUG=True
+DEBUG = True
 
 # Configure logger
 logging.basicConfig(format="%(message)s", level=logging.INFO)
@@ -27,51 +27,61 @@ PREFERENCE_EMAIL_ADDRESS = ''
 class Application:
     """
     Main application class.
-    
+
     Here we perform command line parsing and the initialization/configuration
     of user parameters and package databases.
     """
-    
+
     # Set up some class-wide defaults
     path_root = os.path.abspath(os.path.curdir)
     path_database = os.path.join(path_root, APPLICATION_DATABASE_NAME)
-    preference_path_database = os.path.join(os.path.expanduser('~/.togo'), 'preferences.db')
-    
+    preference_path_database = os.path.join(os.path.expanduser('~/.togo'),
+                                            'preferences.db')
+
     def __init__(self):
         """ Application initialization """
-        
+
         # Set up the option parser to parse CLI options
         p = optparse.OptionParser(description="A simple RPM creation helper.")
-        p.add_option('--configure', action="store_true", help="(re)configure togo's user information")
-        
+        p.add_option('--configure', action="store_true",
+                     help="(re)configure togo's user information")
+
         create_group = optparse.OptionGroup(p, "Create Project")
-        create_group.add_option('-c', dest='create', help="create a new project")
-        
+        create_group.add_option('-c', dest='create',
+                                help="create a new project")
+
         build_group = optparse.OptionGroup(p, "Build Actions")
-        build_group.add_option('-b', '--build', action="store_true", help="build an object")
-        build_group.add_option('-s', dest='spec', help="specify a spec file")
-        build_group.add_option('-m', dest='meta', action="store_true", help="reference a meta object")
-        build_group.add_option('-p', dest='package', action="store_true", help="reference a package object")
-        
+        build_group.add_option('-b', '--build', action="store_true",
+                               help="build an object")
+        build_group.add_option('-s', dest='spec',
+                               help="specify a spec file")
+        build_group.add_option('-m', dest='meta', action="store_true",
+                               help="reference a meta object")
+        build_group.add_option('-p', dest='package', action="store_true",
+                               help="reference a package object")
+
         file_flag_group = optparse.OptionGroup(p, "File Flags")
-        file_flag_group.add_option('-f', dest="flag", help="add/remove flag to files/directories")
-        file_flag_group.add_option('-l', dest="list", action="store_true", help="list all file flags")
-        file_flag_group.add_option('--clear', action="store_true", help="clear all file flags")
-        
+        file_flag_group.add_option('-f', dest="flag",
+                                   help="add/remove flag to files/directories")
+        file_flag_group.add_option('-l', dest="list", action="store_true",
+                                   help="list all file flags")
+        file_flag_group.add_option('--clear', action="store_true",
+                                   help="clear all file flags")
+
         p.add_option_group(create_group)
         p.add_option_group(build_group)
         p.add_option_group(file_flag_group)
         self.options, self.args = p.parse_args()
-        
+
         # Configure the application
         if (self.options.configure):
             self.configure(True)
             sys.exit(1)
         else:
             self.configure()
-            
+
         print
-        
+
         # If creating a new package, do only that and then exit.
         if (self.options.create):
             self.createPackage(self.options.create)
@@ -81,7 +91,7 @@ class Application:
         # If the build option is specified, perform the required actions
         if (self.options.build):
             self.setupDatabase()
-            
+
             if (self.options.package):
                 # Generate the package
                 if (self.options.spec):
@@ -90,39 +100,39 @@ class Application:
                     self.generateSpec()
                     self.generateMetadata()
                 self.buildPackage()
-            
+
             elif (self.options.meta):
                 if (self.options.spec):
                     self.generateMetadata(self.options.spec)
                 else:
                     self.generateSpec()
                     self.generateMetadata()
-                
+
             elif (self.options.spec):
                 # Generate a spec file based on the passed spec name
                 self.generateSpec(self.options.spec)
-                
+
             else:
                 log.error("ERROR: You must provide an object to build.")
                 log.error("")
                 sys.exit(1)
-        
+
         elif (self.options.flag):
             # Flag individual files
             self.setupDatabase()
             self.updateFileDatabase()
             self.flagItem(self.options.flag)
-        
+
         elif (self.options.list):
             # List file flags
             self.setupDatabase()
             self.listFlaggedItems()
-        
+
         elif (self.options.clear):
             # Clear all file flags
             self.setupDatabase()
             self.clearAllFlags()
-            
+
         else:
             # Display the help screen if no options specified
             p.print_help()
@@ -131,7 +141,7 @@ class Application:
 
     def configure(self, initialize=False):
         """ Configure the application for the current user """
-        
+
         # Create the preferences directory and database for this user
         Dir(os.path.split(self.preference_path_database)[0])
         if not (os.path.exists(self.preference_path_database)):
@@ -140,10 +150,10 @@ class Application:
         connection_string = 'sqlite://%s' % (self.preference_path_database)
         self.connection = connectionForURI(connection_string)
         sqlhub.processConnection = self.connection
-        
+
         class Preference(SQLObject):
-            """ Contains the user-level preferences for the applicatiGrover Norquist called the episode "the worst attempt to blame technology in service of a cover-up since the infamouon """
-            full_name = StringCol()            
+            """ Contains the user-level preferences for the application """
+            full_name = StringCol()
             email_address = StringCol()
 
         # Prompt the user for information if needed.
@@ -155,7 +165,8 @@ class Application:
             print "========================"
             sys.stdout.write('Please enter your full name (Ex: Bob Wilkins): ')
             full_name = raw_input()
-            sys.stdout.write('Please enter your email address (Ex: bob.wilkins@rpmhelper.com): ')
+            sys.stdout.write(
+                'Please enter your email address (Ex: bob.wilkins@rpmhelper.com): ')
             email_address = raw_input()
             Preference(full_name=full_name, email_address=email_address)
             print
@@ -178,7 +189,7 @@ class Application:
         else:
             log.error("ERROR: Togo build environment could not be located.\n")
             sys.exit(1)
-    
+
     def connectToDatabase(self):
         """ Connects to the package database """
         connection_string = 'sqlite://%s' % (self.path_database)
@@ -195,13 +206,13 @@ class Application:
         PackageFile.createTable(ifNotExists=True)
         FileFlag.dropTable(ifExists=True)
         FileFlag.createTable(ifNotExists=True)
-        
+
         # Initialize the flag types
-        FileFlag(name = "EXCLUDE")
-        FileFlag(name = "%config")
-        FileFlag(name = "%dir")
-        FileFlag(name = "%doc")
-        
+        FileFlag(name="EXCLUDE")
+        FileFlag(name="%config")
+        FileFlag(name="%dir")
+        FileFlag(name="%doc")
+
     def createPackage(self, name):
         """ Creates a new package and package database """
         path = os.path.join(self.path_root, name)
@@ -211,9 +222,10 @@ class Application:
             self.path_database = os.path.join(d.full_path, APPLICATION_DATABASE_NAME)
             self.initializeDatabase()
             os.chdir(name)
-            Package(package_name = name)
+            Package(package_name=name)
         else:
-            log.error("Can not create package at '%s'; path is already occupied." % (path))
+            log.error("Can not create package at '%s'; path is already occupied."
+                      % (path))
             sys.exit(1)
 
     def generateSpec(self, spec_file='generated.spec'):
@@ -223,12 +235,12 @@ class Application:
         self.updateFileDatabase()
         p.generateSpec(spec_file)
         return spec_file
-    
+
     def generateMetadata(self, spec_file="generated.spec"):
         log.info("Generating metadata using: %s" % (spec_file))
         p = Package.get(1)
         p.generateMetadata(spec_file)
-        
+
     def buildPackage(self):
         log.info("Building the package...")
         p = Package.get(1)
@@ -238,7 +250,7 @@ class Application:
         p = Package.get(1)
         p.updateFileList(self.transaction)
         self.transaction.commit()
-        
+
     def flagItem(self, item):
         p = Package.get(1)
         p.flagItem(item)
@@ -246,113 +258,116 @@ class Application:
     def listFlaggedItems(self):
         p = Package.get(1)
         p.listFlaggedItems()
-    
+
     def clearAllFlags(self):
         p = Package.get(1)
         p.clearAllFlags()
 
 class Package(SQLObject):
-    
+
     package_name = StringCol()
     package_path_root = StringCol(default='./root')
-    #package_path_patches = StringCol(default='./patches')
-    #package_path_sources = StringCol(default='./sources')
+    # package_path_patches = StringCol(default='./patches')
+    # package_path_sources = StringCol(default='./sources')
     package_path_spec = StringCol(default='./spec')
     package_path_meta = StringCol(default='./meta')
     package_path_rpms = StringCol(default='./rpms')
-    
+
     spec_section_extension = ''
-     
+
     def _init(self, *args, **keys):
         SQLObject._init(self, *args, **keys)
-        
+
         self.spec_var_name = self.package_name
-        
+
         for item in dir(self):
             if item.startswith('package_path_'):
                 Dir(getattr(self, item))
-        
+
         changelog_date = os.popen(r"date '+%a %b %d %Y'").read().strip()
-        default_changelog_date_string = "* %s %s <%s>" % (changelog_date, PREFERENCE_FULL_NAME, PREFERENCE_EMAIL_ADDRESS)
+        default_changelog_date_string = ("* %s %s <%s>"
+                                         % (changelog_date,
+                                            PREFERENCE_FULL_NAME,
+                                            PREFERENCE_EMAIL_ADDRESS))
         default_changelog_date_string += "\n- Initial version."
-        
+
         self.default_spec_vars = [
 
             {'#': 'The name of your package'},
-            {'Name' : self.package_name},
-            {'' : ''},
-            
+            {'Name': self.package_name},
+            {'': ''},
+
             {'#': 'A short summary of your package'},
-            {'Summary' : 'None'},
-            {'' : ''},
-            
+            {'Summary': 'None'},
+            {'': ''},
+
             {'#': 'The version of your package'},
-            {'Version' : '1.0'},
-            {'' : ''},
-            
+            {'Version': '1.0'},
+            {'': ''},
+
             {'#': 'The release number of your package'},
-            {'Release' : '1'},
-            {'' : ''},
-            
+            {'Release': '1'},
+            {'': ''},
+
             {'#': 'Any license you wish to list'},
-            {'License' : 'GNU GPL'},
-            {'' : ''},
-            
+            {'License': 'GNU GPL'},
+            {'': ''},
+
             {'#': 'What group this RPM would typically reside in'},
-            {'Group' : 'Applications/System'},
-            {'' : ''},
-            
+            {'Group': 'Applications/System'},
+            {'': ''},
+
             {'#': 'Who packaged this RPM'},
-            {'Packager' : '%s <%s>' % (PREFERENCE_FULL_NAME, PREFERENCE_EMAIL_ADDRESS)},
-            {'' : ''},
-            
+            {'Packager': '%s <%s>' % (PREFERENCE_FULL_NAME, PREFERENCE_EMAIL_ADDRESS)},
+            {'': ''},
+
             {'#': 'The build architecture of this RPM (noarch/x86_64/i386/etc)'},
-            {'Buildarch' : 'noarch'},
-            {'' : ''},
-            
+            {'Buildarch': 'noarch'},
+            {'': ''},
+
             {'#': 'You generally should not need to mess with this setting'},
-            {'Buildroot' : r'%{_tmppath}/%{name}'},
-            {'' : ''},
-            
+            {'Buildroot': r'%{_tmppath}/%{name}'},
+            {'': ''},
+
             {'#': 'Change this extension to change the compression level in your RPM'},
             {'#': ' tar / tar.gz / tar.bz2'},
-            {'Source0' : r'%{name}.tar'},
-            {'' : ''},
-            
+            {'Source0': r'%{name}.tar'},
+            {'': ''},
+
             {'#': 'If this package has prerequisites, uncomment this line and'},
             {'#': ' list them here - examples are already listed'},
-            {'#Requires' : 'bash, python >= 2.7'},
-            {'' : ''},
-            
+            {'#Requires': 'bash, python >= 2.7'},
+            {'': ''},
+
             {'#': 'A more verbose description of your package'},
-            {'%' : r'description'},
-            {'' : 'None'},
-            {'' : ''},
-            
+            {'%': r'description'},
+            {'': 'None'},
+            {'': ''},
+
             {'#': 'You probably do not need to change this'},
-            {'%' : r'define debug_package %{nil}'},
-            {'' : ''},
-            
+            {'%': r'define debug_package %{nil}'},
+            {'': ''},
+
             {'#': 'If you are having trouble building a package and need to disable'},
             {'#': ' automatic dependency/provides checking, uncomment this:'},
-            {'#' : r'AutoReqProv: no'},
-            ]
-        
+            {'#': r'AutoReqProv: no'},
+        ]
+
         self.default_spec_sections = [
-            {'prep' : r'%prep' +'\n' + r'%setup -q -c'},
-            {'build' : r'%build'},
-            {'install' : r'%install' + '\n' + r'rsync -a . %{buildroot}/'},
-            {'clean' : r'%clean' + '\n' + r'rm -rf %{buildroot}'},
-            {'pre' : r'%pre'},
-            {'post' : r'%post'},
-            {'preun' : r'%preun'},
-            {'postun' : r'%postun'},
-            {'trigger' : r'#%trigger'},
-            {'triggerin' : r'#%triggerin'},
-            {'triggerun' : r'#%triggerun'},
-            {'changelog' : r'%changelog' + '\n' + default_changelog_date_string},
-            ]
-        
+            {'prep': r'%prep' + '\n' + r'%setup -q -c'},
+            {'build': r'%build'},
+            {'install': r'%install' + '\n' + r'rsync -a . %{buildroot}/'},
+            {'clean': r'%clean' + '\n' + r'rm -rf %{buildroot}'},
+            {'pre': r'%pre'},
+            {'post': r'%post'},
+            {'preun': r'%preun'},
+            {'postun': r'%postun'},
+            {'trigger': r'#%trigger'},
+            {'triggerin': r'#%triggerin'},
+            {'triggerun': r'#%triggerun'},
+            {'changelog': r'%changelog' + '\n' + default_changelog_date_string},
+        ]
+
         f = File(os.path.join(self.package_path_spec, 'header'))
         if (os.stat(f.full_path)[6] < 1):
             for var in self.default_spec_vars:
@@ -373,7 +388,7 @@ class Package(SQLObject):
             if (os.stat(f.full_path)[6] < 1):
                 f.write(section.values()[0])
                 f.write('\n')
-    
+
     def generateSpec(self, output_file):
         fd = open(output_file, 'w')
         header_file_path = os.path.join(self.package_path_spec, 'header')
@@ -387,7 +402,7 @@ class Package(SQLObject):
         fd.write('\n')
         flags = list(FileFlag.select())
         files = []
-        
+
         # Iterate over each file and check for file flags to generate
         #  the %files directive
         for file in list(PackageFile.select()):
@@ -401,7 +416,7 @@ class Package(SQLObject):
                             write_string += ".gz"
             else:
                 write_string = file.path
-                
+
             if (write_string):
                 files.append(write_string)
 
@@ -412,11 +427,14 @@ class Package(SQLObject):
         fd.write('\n')
         fd.close()
         log.info("Done!")
-    
+
     def updateFileList(self, transaction=None):
         log.info("Scanning for file structure changes...")
-        process = subprocess.Popen('find %s' % (self.package_path_root), shell=True,
-                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        process = subprocess.Popen('find %s' % (self.package_path_root),
+                                   shell=True,
+                                   stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT,
                                    close_fds=True)
         si, so, se = process.stdin, process.stdout, process.stderr
         current_file_list = so.readlines()
@@ -436,9 +454,9 @@ class Package(SQLObject):
                 pf = PackageFile.selectBy(path=file.path, connection=transaction)[0]
                 PackageFile.delete(pf.id, connection=transaction)
                 log.debug("  Removed '%s'" % (file.path))
-        
+
         # Add new files to package database
-        dir_file_flag = FileFlag.select(FileFlag.q.name=="%dir")[0]
+        dir_file_flag = FileFlag.select(FileFlag.q.name == "%dir")[0]
         for file in current_file_list:
             converted_file_path = file.strip()[prefix_length:]
             if (converted_file_path != ''):
@@ -450,14 +468,14 @@ class Package(SQLObject):
                     if (os.path.isdir(file.strip()) and not os.path.islink(file.strip())):
                         pf.addFileFlag(dir_file_flag)
                     log.debug("  Added '%s'" % (converted_file_path))
-                    
+
         log.info(" Scan complete.")
-        
+
     def generateMetadata(self, spec_file):
         self.cleanRedHatDir()
         self.makeDirStructure(spec_file)
         self.tarMainSource(spec_file)
-    
+
     def cleanRedHatDir(self):
         """ Removes old build instances in current projects directory """
         meta_path = os.path.join(self.package_path_meta, '*')
@@ -470,7 +488,7 @@ class Package(SQLObject):
         os.system(execute)
         log.info('')
 
-    def makeDirStructure(self, spec_file):
+def makeDirStructure(self, spec_file):
         """ Creates build directory structure """
         meta_path = os.path.abspath(os.path.join(self.package_path_meta))
         log.info('Creating Metadata Structure')
@@ -482,32 +500,35 @@ class Package(SQLObject):
             dir_path = os.path.join(meta_path, 'redhat', dir)
             log.info("   Creating dir '%s'" % (dir_path))
             os.system('mkdir -p %s' % (dir_path))
-            #link_path = os.path.join(meta_path, 'usr', 'src', 'redhat', dir)
-            #log.info("     Linking %s to %s" % (dir_path, link_path))
-            #os.system('ln -s %s %s' % (dir_path, link_path))
-        spec_link_path = os.path.join(meta_path, 'redhat', 'SPECS', os.path.basename(spec_file))
+            # link_path = os.path.join(meta_path, 'usr', 'src', 'redhat', dir)
+            # log.info("     Linking %s to %s" % (dir_path, link_path))
+            # os.system('ln -s %s %s' % (dir_path, link_path))
+        spec_link_path = os.path.join(
+            meta_path, 'redhat', 'SPECS', os.path.basename(spec_file))
         spec_file_path = os.path.join(meta_path, '..', spec_file)
         log.info('   Linking %s to %s' % (spec_file, spec_link_path))
         os.system('ln -s %s %s' % (spec_file_path, spec_link_path))
         log.info('')
-    
-    def tarMainSource(self, spec_file):
+
+def tarMainSource(self, spec_file):
         """ Build tarball of the SOURCE directory for togobuild """
         excludes = ['.svn', '.pyo']
-        compression_types = [{'tar' : ''},
-                             {'tar.gz' : 'z'},
-                             {'tar.bz' : 'j'},
-                             {'tar.bz2' :'j'},
-                             {'gz' : 'z'},
-                             {'bz' : 'j'},
-                             {'bz2' : 'j'}]
+        compression_types = [{'tar': ''},
+                             {'tar.gz': 'z'},
+                             {'tar.bz': 'j'},
+                             {'tar.bz2': 'j'},
+                             {'gz': 'z'},
+                             {'bz': 'j'},
+                             {'bz2': 'j'}]
         tar_args = 'c'
 
         # Determine desired compression type
         try:
-            specified_compression_type = os.popen('grep Source0 %s' % (spec_file)).readlines()[0].strip()
+            specified_compression_type = (
+                os.popen('grep Source0 %s' % (spec_file)).readlines()[0].strip())
         except:
-            log.error("Can't find source line in specified tar. Unable to determine compression level.")
+            log.error("Can't find source line in specified tar. "
+                      "Unable to determine compression level.")
             sys.exit(1)
         for type in compression_types:
             if (specified_compression_type.endswith(type.keys()[0])):
@@ -515,13 +536,16 @@ class Package(SQLObject):
                 tar_args += type.values()[0]
                 break
         tar_args += 'f'
-        
+
         log.info('Creating Compressed Source')
         log.info('==================================')
         log.info(' Compressing...')
         expanded = " ".join(["--exclude %s" % (v) for v in excludes])
-        source_path = os.path.join(self.package_path_meta, 'redhat', 'SOURCES', self.package_name)
-        execute = 'tar -C %s -%s %s.%s . %s' % (self.package_path_root, tar_args, source_path, tar_extension, expanded)
+        source_path = os.path.join(
+            self.package_path_meta, 'redhat', 'SOURCES', self.package_name)
+        execute = ('tar -C %s -%s %s.%s . %s'
+                   % (self.package_path_root, tar_args, source_path,
+                      tar_extension, expanded))
         os.system(execute)
         log.info('  Done')
         log.info('')
@@ -547,7 +571,7 @@ class Package(SQLObject):
         fd.write("%_gpgbin        /usr/bin/gpg")
         fd.close()
         log.info('')
-    
+
     def buildPackage(self):
         self.setUserVars()
         self.rpmBuild()
@@ -567,7 +591,7 @@ class Package(SQLObject):
         log.info("")
         os.system(exec_string)
         log.info('')
-    
+
     def moveRPMs(self):
         rpms_path = os.path.join(self.package_path_meta, 'redhat', 'RPMS')
         os.system('mv -v `find %s | grep .rpm` %s &>/dev/null' % (rpms_path, self.package_path_rpms))
@@ -581,13 +605,13 @@ class Package(SQLObject):
         item = os.path.abspath(item)
         strip_string = os.path.abspath(self.package_path_root)
         converted_item = re.sub(strip_string, '', item)
-        
+
         try:
             item = list(PackageFile.selectBy(path=converted_item))[0]
         except:
             print "Couldn't find '%s' in the file/dir database." % (converted_item)
             sys.exit(1)
-        
+
         print
         print "Options:"
         print "--------"
@@ -639,7 +663,7 @@ class Package(SQLObject):
                     # Set new file flag
                 item.addFileFlag(choice)
                 log.info(" Applied %s flag to: %s" % (choice.name, item.path))
-    
+
     def listFlaggedItems(self):
         flags = list(FileFlag.select())
         total_files = 0
@@ -654,7 +678,7 @@ class Package(SQLObject):
                 log.info("")
         if not (total_files):
             log.info("No files have been flagged.")
-    
+
     def clearAllFlags(self):
         flags = list(FileFlag.select())
         for flag in flags:
@@ -662,18 +686,18 @@ class Package(SQLObject):
             for flagged_item in flagged_items:
                 flag.removePackageFile(flagged_item)
         print "Cleared all file flags."
-  
+
 class PackageFile(SQLObject):
     class sqlmeta:
         lazyUpdate = True
-        
+
     path = StringCol(unique=True)
     flags = RelatedJoin('FileFlag')
-    
+
 class FileFlag(SQLObject):
     class sqlmeta:
         lazyUpdate = True
-        
+
     name = StringCol()
     package_files = RelatedJoin('PackageFile')
 
@@ -682,11 +706,11 @@ class File:
         self.full_path = full_path
         self.path, self.base_name = os.path.split(self.full_path)
         self.create()
-    
+
     def create(self):
         os.system('mkdir -p %s' % (self.path))
         self.touch()
-    
+
     def touch(self):
         os.system('touch %s' % (self.full_path))
 
@@ -695,7 +719,7 @@ class File:
         data = fd.read()
         fd.close()
         return data
-    
+
     def write(self, data):
         fd = open(self.full_path, 'a')
         fd.write(data)
@@ -703,10 +727,10 @@ class File:
 
     def getPath(self):
         return self.full_path
-    
+
     def getBasePath(self):
         return self.path
-    
+
     def getName(self):
         return self.base_name
 
@@ -724,7 +748,7 @@ class Dir:
 
     def create(self):
         os.system('mkdir -p %s' % (self.full_path))
-        
+
     def getPath(self):
         return self.full_path
 
