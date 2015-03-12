@@ -142,7 +142,7 @@ class Application:
         sqlhub.processConnection = self.connection
         
         class Preference(SQLObject):
-            """ Contains the user-level preferences for the applicatiGrover Norquist called the episode "the worst attempt to blame technology in service of a cover-up since the infamouon """
+            """ Contains the user-level preferences for the application """
             full_name = StringCol()            
             email_address = StringCol()
 
