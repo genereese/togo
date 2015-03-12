@@ -135,7 +135,9 @@ class Application:
         # Create the preferences directory and database for this user
         Dir(os.path.split(self.preference_path_database)[0])
         if not (os.path.exists(self.preference_path_database)):
-            initialize = True
+            create_database = True
+        else:
+            create_database = False
 
         connection_string = 'sqlite://%s' % (self.preference_path_database)
         self.connection = connectionForURI(connection_string)
@@ -145,6 +147,11 @@ class Application:
             """ Contains the user-level preferences for the application """
             full_name = StringCol()            
             email_address = StringCol()
+        
+        # Create the database, if needed
+        if (create_database):
+            Preference.createTable()
+            Preference(full_name = 'Anonymous', email_address='None')
 
         # Prompt the user for information if needed.
         if (initialize):
