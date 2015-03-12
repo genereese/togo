@@ -1,4 +1,7 @@
 %changelog
+* Thu Mar 12 2015 Gene Reese <gene.reese@xirsix.com>
+- Set default values for user and email address
+
 * Tue Jun 17 2014 Gene Reese <gene.reese@xirsix.com>
 - Corrected bug regarding storing symlinks in the file flag database
 - Hid unnecessary debug output for several commands
