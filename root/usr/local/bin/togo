@@ -15,6 +15,9 @@ except ImportError:
 
 DEBUG=True
 
+# Ensure 'date' uses english names for months etc.
+os.environ['LC_ALL'] = "C"
+
 # Configure logger
 logging.basicConfig(format="%(message)s", level=logging.INFO)
 log = logging.getLogger()
