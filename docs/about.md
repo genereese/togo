@@ -1,4 +1,4 @@
-# What is Togo?
+### What is Togo?
 Want to create an RPM to deploy your software and don't want to spend hours learning how to do it? -or maybe you're already familiar with the process, but just want it to feel more clean and organized?
 
 Use Togo! You can have **your first RPM** built and ready to install **in less than 5 minutes.** (Scroll down for a super-fast example.)
@@ -9,7 +9,7 @@ Who might find Togo useful?
 * Anyone who wants to keep track of everything on their system(s) with RPM
 
 
-#####[Get Started with the Quick-start Guide](./quickstart.md)
+#####GET STARTED: [View the Quick-start Guide](./quickstart.md)
 
 ### Philosophy
 
