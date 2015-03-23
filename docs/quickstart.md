@@ -2,8 +2,8 @@
 
 There were many syntax changes to allow for flagging of files via the command line as well as some database changes. Any project created with Togo 1.x will need to have its project database updated using 'togo file database --init'. Unfortunately, you will also need to re-flag your project files and set your excludes, etc. again.
 
-# Quickstart Guide
-### Installation
+### Quickstart Guide
+#### Installation
 Clone the repo, run the build script, and install the RPM
 
 ```
@@ -14,14 +14,14 @@ $ cd togo; ./build-togo.sh
 $ sudo yum localinstall ./rpms/*.rpm
 ```
 
-### Configuration
+#### Configuration
 Now that togo is installed, let's configure it.
 
 ```bash
 $ togo configure -n "Your Name" -e "your_email@address.com"
 ```
 
-# Super-Fast Example
+### Super-Fast Example
 
 1) Create the project directory using the script:
 ```bash
@@ -50,7 +50,7 @@ $ togo build package
 -and your RPM is spit out into the rpms directory.
 
 
-# Detailed Example
+### Detailed Example
 Once togo is configured, you can create your first project. To do this, move to the desired parent directory and run togo with the 'create' option. Whatever you pass as the argument will be the name of your new RPM. You can change it later, but it's easiest to start out with the proper name:
 
 ```bash
@@ -64,7 +64,7 @@ $ cd /home/username/rpms
 $ togo create my-package-name
 ```
 
-### Directory Structure Overview
+#### Directory Structure Overview
 You will now notice a new directory under your current directory called 'my-package-name' (or whatever you named it). Change into this directory to get started.
 
 ```bash
@@ -73,7 +73,7 @@ $ cd my-package-name
 
 Here you will notice several directories. The main ones you will be concerned with for a 'quick start' are the 'root' and 'spec' directories.
 
-#### The 'root' Directory
+##### The 'root' Directory
 The 'root' directory represents your RPMs expanded files.
 
 For example, say you developed a script called 'stat.sh' that polls the host machine for statistical information. You would like to place this script in an RPM and make sure that users on the system have access to it.
