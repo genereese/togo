@@ -7,5 +7,5 @@ http://stackoverflow.com/questions/880227/what-is-the-minimum-i-have-to-do-to-cr
 #####[About Togo](./docs/about.md)
 #####[Quick-start Guide](./docs/quickstart.md)
 
-#### Usag Information
+#### Usage Information
 #####[General](./docs/general.md)
