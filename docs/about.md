@@ -8,6 +8,9 @@ Who might find Togo useful?
 * A developer who has pre-compiled binaries he wants to package up and install on several systems
 * Anyone who wants to keep track of everything on their system(s) with RPM
 
+
+#####[Get Started with the Quick-start Guide](./docs/quickstart.md)
+
 ### Philosophy
 
 Traditionally, RPM creation has been overly complicated. Best practices are largely non-existent and documentation mainly consists of either incredibly dry reading, or random anecdotes from people who have done it their own way. Togo seeks to help both new-comers and experienced RPM builders standardize and organize their build process by making it as simple and reproducible as possible.
