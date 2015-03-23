@@ -9,7 +9,7 @@ Who might find Togo useful?
 * Anyone who wants to keep track of everything on their system(s) with RPM
 
 
-#####[Get Started with the Quick-start Guide](./docs/quickstart.md)
+#####[Get Started with the Quick-start Guide](./quickstart.md)
 
 ### Philosophy
 
