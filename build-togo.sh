@@ -16,11 +16,11 @@ if [ $? -ne 0 ]; then
 	echo "  If you have satisfied these requirements via some other means"
 	echo "  (easy_install, etc.) you may try to build the RPM using:"
 	echo
-	echo "  ./root/usr/local/bin/togo -bp"
+	echo "  ./root/usr/local/bin/togo build package"
 	echo
 else
 	echo
 	echo "Attempting to build the togo RPM..."
-	./root/usr/local/bin/togo -bp
+	./root/usr/local/bin/togo build package
 	echo
 fi

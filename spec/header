@@ -5,10 +5,10 @@ Name: togo
 Summary: A quick/easy RPM making script
 
 # The version of your package
-Version: 1.1
+Version: 2.0
 
 # The release number of your package
-Release: 4
+Release: 1
 
 # Any license you wish to list
 License: GNU GPL

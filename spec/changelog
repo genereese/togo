@@ -1,4 +1,9 @@
 %changelog
+* Mon Mar 23 2015 Gene Reese <gene.reese@xirsix.com>
+- Swapped out optparse (deprecated) for argparse
+- Heavily modified database structure
+- Removed interactive file flagging in exchange for command line file flagging
+
 * Thu Mar 12 2015 Gene Reese <gene.reese@xirsix.com>
 - Set default values for user and email address
 
