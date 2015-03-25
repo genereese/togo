@@ -2,7 +2,7 @@
 
 There were many syntax changes to allow for flagging of files via the command line as well as some database changes. Any project created with Togo 1.x will need to have its project database updated using 'togo file database --init'. Unfortunately, you will also need to re-flag your project files and set your excludes, etc. again.
 
-### Quickstart Guide
+### Quick-start Guide
 #### Installation
 Clone the repo, run the build script, and install the RPM
 
