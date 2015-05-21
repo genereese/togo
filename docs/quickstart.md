@@ -37,7 +37,6 @@ $ mkdir -p root/usr/local/bin; touch root/usr/local/bin/example_file
 $ togo file exclude root/usr/local/bin
 ...
 ```
--and select option '1' to exclude (the exclude will cascade down and exclude the parent directories)
 
 4) Modify the spec to change your version/release/summary, etc.
 ```bash
