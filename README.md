@@ -5,10 +5,16 @@ http://stackoverflow.com/questions/880227/what-is-the-minimum-i-have-to-do-to-cr
 
 ---
 
-#### Togo 2.x Changes
+### What is Togo?
+Want to create an RPM to deploy your software and don't want to spend hours learning how to do it? -or maybe you're already familiar with the process, but just want it to feel more clean and organized?
 
-There were many syntax changes to allow for flagging of files via the command line as well as some database changes. Any project created with Togo 1.x will need to have its project database updated using 'togo file database --init'. Unfortunately, you will also need to re-flag your project files and set your excludes, etc. again.
+Use Togo! You can have **your first RPM** built and ready to install **in less than 5 minutes.** (Scroll down for a super-fast example.)
 
+Who might find Togo useful?
+* A sysadmin who has a script or group of scripts he wants to add to a yum repository
+* A developer who has pre-compiled binaries he wants to package up and install on several systems
+* Anyone who wants to keep track of everything on their system(s) with RPM
+* 
 ### Quick-start Guide
 #### Installation
 Clone the repo, run the build script, and install the RPM
