@@ -1,8 +1,5 @@
 #!/usr/bin/python
 
-from argparse import RawTextHelpFormatter
-
-import argparse
 import exceptions
 import logging
 import optparse
@@ -11,6 +8,14 @@ import re
 import subprocess
 import sys
 
+# Attempt argparse imports
+try:
+    import argparse
+except ImportError:
+    raise exceptions.Exception("'python-argparse' package not installed.")
+from argparse import RawTextHelpFormatter
+
+# Attempt sqlpobject import
 try:
     from sqlobject import *
 except ImportError:
