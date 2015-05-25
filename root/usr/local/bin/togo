@@ -274,7 +274,7 @@ class Application:
             
     def preferenceSetName(self, name="Anonymous"):
         """ Configure the name of the package builder """
-        log.info("Setting name...")
+        log.info("Setting builder name...")
         p = Preference.get(1)
         p.name = name
     

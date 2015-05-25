@@ -1,4 +1,8 @@
 %changelog
+* Mon May 25 2015 Gene Reese <gene.reese@xirsix.com>
+- Fixed premature preference database connection close on some RHEL6.x systems
+- Cosmetic configuration display fix
+
 * Mon Mar 23 2015 Gene Reese <gene.reese@xirsix.com>
 - Swapped out optparse (deprecated) for argparse
 - Heavily modified database structure
