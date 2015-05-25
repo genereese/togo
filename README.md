@@ -38,7 +38,7 @@ $ togo configure -n "Your Name" -e "your_email@address.com"
 This information is only used to set the "Packager" field on any RPMs you create:
 
 ```
-[greese@localhost togo]$ rpm -qip rpms/togo-2.0-2.noarch.rpm | grep "Packager"
+$ rpm -qip togo-2.0-2.noarch.rpm | grep "Packager"
 Packager    : Gene Reese <gene.reese@xirsix.com>
 ```
 
