@@ -35,8 +35,12 @@ Now that togo is installed, configure your name and email:
 $ togo configure -n "Your Name" -e "your_email@address.com"
 ```
 
-This information is inserted into any RPMs you create so that they have the correct contact information and is not collected or used for any other purpose.
+This information is only used to set the "Packager" field on any RPMs you create:
 
+```
+[greese@localhost togo]$ rpm -qip rpms/togo-2.0-2.noarch.rpm | grep "Packager"
+Packager    : Gene Reese <gene.reese@xirsix.com>
+```
 
 ### Super-Fast Example
 
