@@ -55,9 +55,7 @@ $ togo build package
 ```
 -and your RPM is spit out into the rpms directory.
 
-##### Getting Started
+##### More Information
 * [About Togo](./docs/about.md)
 * [Detailed Example](./docs/detailed-example.md)
-
-##### Usage Information
 * [General](./docs/general.md)
