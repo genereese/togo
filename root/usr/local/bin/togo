@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import compileall
 import exceptions
 import logging
 import optparse
@@ -20,8 +21,6 @@ try:
     from sqlobject import *
 except ImportError:
     raise exceptions.Exception("'python-sqlobject' package not installed.")
-
-DEBUG = True
 
 # Ensure 'date' uses english names for months etc.
 os.environ['LC_ALL'] = "C"
@@ -372,7 +371,7 @@ class Application:
         
         # Legacy table cleanup
         FileFlag.dropTable(ifExists=True)
-        
+
         # If there was previous Package information, restore it
         if (p):
             Package(package_name=p.package_name,
@@ -637,6 +636,11 @@ class Package(SQLObject):
 
     def updateFileList(self, transaction=None):
         log.debug("Scanning for file structure changes...")
+        
+        # Account for python scripts which need to be bytecompiled before inclusion
+        compileall.compile_dir('root/', quiet=True) # Generate *.pyc
+        os.system("python -O -m compileall root/ > /dev/null 2>&1")  # Generate *.pyo
+        
         process = subprocess.Popen('find %s' % (self.package_path_root), shell=True,
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                    close_fds=True)
@@ -917,8 +921,8 @@ class Attr(SQLObject):
 
 # Included for legacy cleanup purposes
 class FileFlag(SQLObject):
-    package_files = RelatedJoin('PackageFile')
-
+    pass
+   
 class File:
     def __init__(self, full_path):
         self.full_path = full_path

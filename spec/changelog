@@ -2,6 +2,8 @@
 * Mon May 25 2015 Gene Reese <gene.reese@xirsix.com>
 - Fixed premature preference database connection close on some RHEL6.x systems
 - Fixed argpase error checking for RHEL systems
+- Fixed python bytecompile issue where bytecompiled python sources were not
+being included and were causing "non-packaged files" errors
 - Cosmetic configuration display fix
 
 * Mon Mar 23 2015 Gene Reese <gene.reese@xirsix.com>

@@ -8,7 +8,7 @@ Summary: A quick/easy RPM making script
 Version: 2.0
 
 # The release number of your package
-Release: 3
+Release: 4
 
 # Any license you wish to list
 License: GNU GPL
