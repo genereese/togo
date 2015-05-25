@@ -29,11 +29,14 @@ $ sudo yum localinstall ./rpms/*.rpm
 ```
 
 #### Configuration
-Now that togo is installed, configure your name and email so the RPMs you create have the correct contact information in them:
+Now that togo is installed, configure your name and email:
 
 ```bash
 $ togo configure -n "Your Name" -e "your_email@address.com"
 ```
+
+This information is inserted into any RPMs you create so that they have the correct contact information and is not collected or used for any other purpose.
+
 
 ### Super-Fast Example
 
