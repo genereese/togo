@@ -60,7 +60,7 @@ $ togo file exclude root/usr/local/bin
 ...
 ```
 
-4) Modify the spec to change your version/release/summary, etc.
+4) (OPTIONAL) Modify the generated spec file to your desired version/release/summary, etc.
 ```bash
 $ vi spec/header
 ```
@@ -68,7 +68,7 @@ $ vi spec/header
 ```bash
 $ togo build package
 ```
--and your RPM is spit out into the rpms directory.
+-and your RPM is placed into the ./rpms directory.
 
 ##### More Information
 * [About Togo](./docs/about.md)
