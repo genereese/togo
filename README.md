@@ -60,7 +60,7 @@ $ togo file exclude root/usr/local/bin
 ...
 ```
 
-4) (OPTIONAL) Modify the generated spec file to your desired version/release/summary, etc.
+4) **OPTIONAL:** Modify the generated spec file to your desired version/release/summary, etc.
 ```bash
 $ vi spec/header
 ```
