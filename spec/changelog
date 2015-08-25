@@ -1,4 +1,8 @@
 %changelog
+* Mon Aug 24 2015 Gene Reese <gene.reese@xirsix.com>
+- Added file/directory permission support
+- Togo now properly handles files/directories with spaces in them
+
 * Mon May 25 2015 Gene Reese <gene.reese@xirsix.com>
 - Fixed premature preference database connection close on some RHEL6.x systems
 - Fixed argpase error checking for RHEL systems

@@ -95,7 +95,7 @@ class Application:
         sp_build = p_build.add_subparsers(dest="sp_build")
         
         # Create the build spec parser
-        p_build_spec = sp_build.add_parser('spec', help="Build a a spec file")
+        p_build_spec = sp_build.add_parser('spec', help="Build a spec file")
         p_build_spec.add_argument('-o', metavar='output', dest="build_spec",
                               help="Specify an output name")
         
@@ -614,20 +614,24 @@ class Package(SQLObject):
         files = []
 
         # Iterate over each file and check for file flags to generate
-        #  the %files flag
-        for file in list(PackageFile.select(PackageFile.q.excluded==0)):
+        #  the %files section of the spec
+        for file in list(PackageFile.select(PackageFile.q.excluded==0,
+                                            orderBy=PackageFile.q.path)):
+            local_path = '%s%s'% (self.package_path_root, file.path)
+            permissions = oct(os.stat(local_path).st_mode & 0777)
+            write_string = "%%attr(%s, root, root) " % (permissions)
             if (len(file.directives)):
                 for directive in file.directives:
-                    write_string = "%s %s" % (directive.name, file.path)
+                    write_string += '%s "%s' % (directive.name, file.path)
                     if (directive.name == "%doc"):
                         write_string += ".gz"
+                    write_string += '"'
             else:
-                write_string = file.path
+                write_string += '"%s"' % (file.path)
 
             if (write_string):
                 files.append(write_string)
 
-        files.sort()
         for file in files:
             fd.write(file)
             fd.write('\n')
