@@ -31,7 +31,7 @@ Source0: %{name}.tar.gz
 
 # If this package has prerequisites, uncomment this line and
 #  list them here - examples are already listed
-Requires: bash, python >= 2.5, python-sqlobject, rpm-build, rsync
+Requires: bash, python >= 2.5, rpm-build, rsync
 
 # A more verbose description of your package
 %description
