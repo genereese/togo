@@ -49,9 +49,9 @@ Packager    : Gene Reese <gene.reese@xirsix.com>
 
 ### Super-Fast Example
 
-1) Create the project directory using the script:
+1) Create the project directory using the script (this should be the desired name of your RPM):
 ```bash
-$ togo create my-project; cd my-project
+$ togo create my-new-rpm; cd my-new-rpm
 ```
 2) Copy your files into the build root:
 ```bash
