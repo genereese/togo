@@ -23,7 +23,14 @@ Who might find Togo useful?
 
 ### Quick-start Guide
 #### Installation
-Clone the repo, run the build script, and install the RPM
+
+Download and install the togo RPM from the releases page:
+
+* https://github.com/genereese/togo/releases
+
+-- or --
+
+Clone the repo, run the build script, and install the RPM manually:
 
 ```
 $ git clone https://github.com/genereese/togo.git
