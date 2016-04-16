@@ -3,6 +3,7 @@
 - Added project management commands
 - Changed project creation syntax
 - Added project renaming functionality
+- Added new dependency for togo (sed)
 
 * Mon Aug 24 2015 Gene Reese <gene.reese@xirsix.com>
 - Added file/directory permission support
