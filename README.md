@@ -28,7 +28,7 @@ Download and install the togo RPM from the releases page:
 
 * https://github.com/genereese/togo/releases
 
--- or --
+**-- or --**
 
 Clone the repo, run the build script, and install the RPM manually:
 
