@@ -24,11 +24,22 @@ Who might find Togo useful?
 ### Quick-start Guide
 #### Installation
 
-Download and install the togo RPM from the releases page:
+Download and install togo using whatever method is most convenient:
 
+##### From the github releases page
 * https://github.com/genereese/togo/releases
 
-**-- or --**
+##### Using yum
+```
+$ sudo yum install https://github.com/genereese/togo/releases/download/v2.2r1/togo-2.2-1.noarch.rpm
+```
+
+##### Using dnf
+```
+$ sudo dnf install https://github.com/genereese/togo/releases/download/v2.2r1/togo-2.2-1.noarch.rpm
+```
+
+##### Manual install
 
 Clone the repo, run the build script, and install the RPM manually:
 
