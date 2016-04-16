@@ -84,11 +84,21 @@ class Application:
                                   dest='preference_reinitialize',
                                   help="(Re)initialize the preferences database.")
         
-        # Create the creation parser
-        p_create = sp.add_parser('create', help="Package creation command")
-        p_create.add_argument(metavar="project",
-                               dest="create_project",
-                               help="Project name")
+        # Create the project parser and subparser
+        p_project = sp.add_parser('project', help="Project management commands")
+        sp_project = p_project.add_subparsers(dest="sp_project")
+        
+        # Create the project create parser
+        p_project_create = sp_project.add_parser('create', help='Create a new project')
+        p_project_create.add_argument(metavar="name",
+                                      dest="project_name",
+                                      help="Project name")
+        
+        # Create the project rename parser
+        p_project_rename = sp_project.add_parser('rename', help="Rename this project")
+        p_project_rename.add_argument(metavar="name",
+                                      dest="project_name",
+                                      help="Desired project name")
         
         # Create the build parser and subparser
         p_build = sp.add_parser('build', help="Package build commands")
@@ -182,10 +192,20 @@ class Application:
             else:
                 p_configure.print_help()
         
-        # If invoking creation commands
-        elif (args.sp == 'create'):
-            if (args.create_project):
-                self.createPackage(args.create_project)
+        # If invoking project management commands
+        elif (args.sp == 'project'):
+            
+            # If creating a new project
+            if (args.sp_project == 'create'):
+                if (args.project_name):
+                    self.createProject(args.project_name)
+            
+            # If renaming an existing project
+            if (args.sp_project == 'rename'):
+                if (args.project_name):
+                    # Set up the connection to the package database
+                    self.setupDatabase()                    
+                    self.renameProject(args.project_name)
         
         # If invoking build commands
         elif (args.sp == 'build'):
@@ -390,7 +410,7 @@ class Application:
         Directive(name="%docdir",
                   description="Documentation directories.")
 
-    def createPackage(self, name):
+    def createProject(self, name):
         """ Creates a new package and package database """
         log.info("Creating new project...")
         path = os.path.join(self.path_root, name)
@@ -404,6 +424,59 @@ class Application:
             log.error("  Can not create package at '%s'; path is already occupied." % (path))
             sys.exit(1)
         log.info('  New project created at: %s' % (path))
+    
+    def renameProject(self, name):
+        """ Renames an existing package """
+        
+        log.info("")
+        log.info("Attempting to rename the current project...")
+        
+        project_name_new = name
+        project_path_new = "../%s" % (project_name_new)
+        
+        log.info("  Checking to see if destination name is ok...")
+        if (os.path.exists(project_path_new)):
+            log.error("")
+            log.error("    ERROR: There is already something at the path '%s'" % (project_path_new))
+            log.error("")
+            log.error("    Please select another name or clear the destination.")
+            log.error("")
+            
+        else:
+        
+            # Try to grab the existing Package object if it exists
+            log.info("  Getting current project name...")
+            try:
+                p = Package.get(1)
+            except:
+                log.error("  Could not find existing Togo package information for this project.")
+            else:
+                
+                log.info("    Found: %s" % (p.package_name))
+                
+                project_name_old = p.package_name
+                project_path_old = "../%s" % (project_name_old)
+                
+                # Rename the package in the database
+                log.info("  Updating project name in the 'helper.db' database...")
+                p.package_name = name
+                log.info("    Done!")
+                
+                # Update the spec file
+                log.info("  Updating project name in './spec/header' file...")
+                os.system("sed -i -- 's/Name: %s/Name: %s/g' %s" % (project_name_old,
+                                                        project_name_new,
+                                                        'spec/header'))
+                log.info("    Done!")
+                
+                # Update the project directory name
+                log.info("  Renaming the current working directory...")
+                os.rename(project_path_old, project_path_new)
+                log.info("    Done!")
+                
+                log.info("")
+                log.info("  Rename complete; type 'cd .' to refresh your current working directory.")
+                log.info("")
 
     def generateSpec(self, spec_file='generated.spec'):
         """ Generates a spec file by the given name """

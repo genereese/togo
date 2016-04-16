@@ -1,4 +1,9 @@
 %changelog
+* Sat Apr 16 2016 Gene Reese <gene.reese@xirsix.com>
+- Added project management commands
+- Changed project creation syntax
+- Added project renaming functionality
+
 * Mon Aug 24 2015 Gene Reese <gene.reese@xirsix.com>
 - Added file/directory permission support
 - Togo now properly handles files/directories with spaces in them
