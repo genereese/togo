@@ -9,7 +9,7 @@ $ mkdir -p /home/username/rpms
 $ cd /home/username/rpms
 
 # Run togo with 'create' to create a new package
-$ togo create my-package-name
+$ togo project create my-package-name
 ```
 
 #### Directory Structure Overview
