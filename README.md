@@ -26,9 +26,6 @@ Who might find Togo useful?
 
 Download and install togo using whatever method is most convenient:
 
-##### From the github releases page
-* https://github.com/genereese/togo/releases
-
 ##### Using yum
 ```
 $ sudo yum install https://github.com/genereese/togo/releases/download/v2.2r1/togo-2.2-1.noarch.rpm
