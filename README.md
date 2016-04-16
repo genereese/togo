@@ -51,7 +51,7 @@ Packager    : Gene Reese <gene.reese@xirsix.com>
 
 1) Create the project directory using the script (this should be the desired name of your RPM):
 ```bash
-$ togo create my-new-rpm; cd my-new-rpm
+$ togo project create my-new-rpm; cd my-new-rpm
 ```
 2) Copy your files into the build root:
 ```bash
