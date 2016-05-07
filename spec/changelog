@@ -1,4 +1,7 @@
 %changelog
+* Sat May 7 2016 Gene Reese <gene.reese@xirsix.com>
+- Changed path of togo script
+
 * Sat Apr 16 2016 Gene Reese <gene.reese@xirsix.com>
 - Added project management commands
 - Changed project creation syntax
