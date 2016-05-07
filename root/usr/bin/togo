@@ -118,6 +118,8 @@ class Application:
         p_build_package = sp_build.add_parser('package', help="Build the package")
         p_build_package.add_argument('-s', metavar='specfile', dest="build_spec",
                                  help="Specify a spec file")
+        p_build_package.add_argument('--nodeps', dest="build_nodeps", action="store_true",
+                                         help="Disable automatic dependency generation")        
         
         # Create the file parser and subparser
         p_file = sp.add_parser('file', help="File commands")
@@ -235,7 +237,11 @@ class Application:
                 else:
                     self.generateSpec()
                     self.generateMetadata()
-                self.buildPackage()
+                if (args.build_nodeps):
+                    disable_dependency_generation = True
+                else:
+                    disable_dependency_generation = False
+                self.buildPackage(disable_dependency_generation)
             
             # If no options are specified
             else:
@@ -493,11 +499,11 @@ class Application:
         p = Package.get(1)
         p.generateMetadata(spec_file)
 
-    def buildPackage(self):
+    def buildPackage(self, disable_dependency_generation):
         log.info('')
         log.info("Building the package...")
         p = Package.get(1)
-        p.buildPackage()
+        p.buildPackage(disable_dependency_generation)
 
     def updateFileDatabase(self):
         p = Package.get(1)
@@ -637,7 +643,7 @@ class Package(SQLObject):
         ]
 
         self.default_spec_sections = [
-            {'prep' : r'%prep' +'\n' + r'%setup -q -c'},
+            {'prep' : r'%prep' + '\n' + r'%setup -q -c'},
             {'build' : r'%build'},
             {'install' : r'%install' + '\n' + r'rsync -a . %{buildroot}/'},
             {'clean' : r'%clean' + '\n' + r'rm -rf %{buildroot}'},
@@ -826,7 +832,7 @@ class Package(SQLObject):
         log.info('    Done')
         log.info('')
 
-    def setUserVars(self):
+    def setUserVars(self, disable_dependency_generation=False):
         """ Sets up the ~/.rpmmacros file. """
         import socket
         hostname = socket.gethostname()
@@ -844,11 +850,16 @@ class Package(SQLObject):
         fd.write(identity + '@' + hostname)
         fd.write('\n')
         fd.write("%_gpgbin        /usr/bin/gpg")
+        if (disable_dependency_generation):
+            fd.write('\n')
+            fd.write(r"%__find_requires %{nil}")
+            fd.write('\n')
+            fd.write(r"%_use_internal_dependency_generator %{nil}")
         fd.close()
         log.info('')
 
-    def buildPackage(self):
-        self.setUserVars()
+    def buildPackage(self, disable_dependency_generation):
+        self.setUserVars(disable_dependency_generation)
         self.rpmBuild()
         self.moveRPMs()
 

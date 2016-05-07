@@ -1,6 +1,8 @@
 %changelog
 * Sat May 7 2016 Gene Reese <gene.reese@xirsix.com>
 - Changed path of togo script
+- Added a --nodeps flag to package building to disable automatic dependency
+generation
 
 * Sat Apr 16 2016 Gene Reese <gene.reese@xirsix.com>
 - Added project management commands
