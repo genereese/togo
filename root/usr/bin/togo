@@ -1,0 +1,1076 @@
+#!/usr/bin/python
+
+import compileall
+import exceptions
+import logging
+import optparse
+import os
+import re
+import subprocess
+import sys
+
+# Attempt argparse imports
+try:
+    import argparse
+except ImportError:
+    raise exceptions.Exception("'python-argparse' package not installed.")
+from argparse import RawTextHelpFormatter
+
+# Attempt sqlpobject import
+try:
+    from sqlobject import *
+except ImportError:
+    raise exceptions.Exception("'python-sqlobject' package not installed.")
+
+# Ensure 'date' uses english names for months etc.
+os.environ['LC_ALL'] = "C"
+
+# Configure logger
+logging.basicConfig(format="%(message)s", level=logging.INFO)
+log = logging.getLogger()
+
+APPLICATION_DATABASE_NAME = 'helper.db'
+
+PREFERENCE_NAME = ''
+PREFERENCE_EMAIL = ''
+
+class Application:
+    """
+    Main application class.
+
+    Here we perform command line parsing and the initialization/configuration
+    of user parameters and package databases.
+    """
+
+    # Set up some class-wide defaults
+    path_root = os.path.abspath(os.path.curdir)
+    path_database = os.path.join(path_root, APPLICATION_DATABASE_NAME)
+    preference_path_database = os.path.join(os.path.expanduser('~/.togo'), 'preferences.db')
+
+    def __init__(self):
+        """ Application initialization """
+
+        # Override default argparse behavior
+        class TogoParser(argparse.ArgumentParser):
+            def error(self, message):
+                print 'error: %s\n' % (message)
+                self.print_help()
+                print
+                sys.exit(2)
+        
+        # Create the main parser
+        p = TogoParser(description="A simple RPM creation helper.")
+        p.add_argument('-d', '--debug', action="store_true", 
+                       help="Display debug information.")
+        
+        # Create the main subparsers
+        sp = p.add_subparsers(dest="sp")
+        
+        # Create the configuration parser
+        p_configure = sp.add_parser('configure', 
+                                     help="Togo configuration commands")
+        p_configure.add_argument('-d',
+                                  dest="preference_display",
+                                  action="store_true",
+                                  help="Display current configuration")
+        p_configure.add_argument('-n',
+                                  metavar='name',
+                                  dest='preference_name',
+                                  help="Set builder name")
+        p_configure.add_argument('-e',
+                                  metavar='email', dest='preference_email',
+                                  help="Set builder email address")
+        p_configure.add_argument('--pref_init', action="store_true",
+                                  dest='preference_reinitialize',
+                                  help="(Re)initialize the preferences database.")
+        
+        # Create the project parser and subparser
+        p_project = sp.add_parser('project', help="Project management commands")
+        sp_project = p_project.add_subparsers(dest="sp_project")
+        
+        # Create the project create parser
+        p_project_create = sp_project.add_parser('create', help='Create a new project')
+        p_project_create.add_argument(metavar="name",
+                                      dest="project_name",
+                                      help="Project name")
+        
+        # Create the project rename parser
+        p_project_rename = sp_project.add_parser('rename', help="Rename this project")
+        p_project_rename.add_argument(metavar="name",
+                                      dest="project_name",
+                                      help="Desired project name")
+        
+        # Create the build parser and subparser
+        p_build = sp.add_parser('build', help="Package build commands")
+        sp_build = p_build.add_subparsers(dest="sp_build")
+        
+        # Create the build spec parser
+        p_build_spec = sp_build.add_parser('spec', help="Build a spec file")
+        p_build_spec.add_argument('-o', metavar='output', dest="build_spec",
+                              help="Specify an output name")
+        
+        # Create the build meta parser
+        p_build_meta = sp_build.add_parser('meta', help="Build the metadata")
+        p_build_meta.add_argument('-s', metavar='specfile', dest="build_spec",
+                              help="Specify a spec file")
+        
+        # Create the build package parser
+        p_build_package = sp_build.add_parser('package', help="Build the package")
+        p_build_package.add_argument('-s', metavar='specfile', dest="build_spec",
+                                 help="Specify a spec file")
+        
+        # Create the file parser and subparser
+        p_file = sp.add_parser('file', help="File commands")
+        sp_file = p_file.add_subparsers(dest="sp_file")
+        
+        # Create the file list parser
+        p_file_list = sp_file.add_parser('list', help="List the project's files")
+        p_file_list.add_argument('file_list_files', metavar="files", nargs='*', 
+                              help="Specify file(s) to display")
+        
+        # Create the file include parser
+        p_file_include = sp_file.add_parser('include',
+                                      help="Include directories in project ownership.")
+        p_file_include.add_argument('file_include_files', metavar="files", nargs='*', 
+                              help="Specify directories to include")
+        
+        # Create the file exclude parser
+        p_file_exclude = sp_file.add_parser('exclude',
+                                         help="Exclude directories from project ownership.")
+        p_file_exclude.add_argument('file_exclude_files', metavar="files", nargs='*', 
+                              help="Specify directories to exclude")
+        
+        # Create the file flag parser and subparser
+        p_file_flag = sp_file.add_parser('flag', help="Flag commands")
+        sp_file_flag = p_file_flag.add_subparsers(dest="sp_file_flag")
+
+        # Create the file flag normal parser and subparser
+        p_file_flag_normal = sp_file_flag.add_parser('normal', help="Flag file(s) as normal")
+        p_file_flag_normal.add_argument('file_flag_normal_files', metavar="files", 
+                                 nargs='*', help="Specify files to flag")
+        
+        # Create the file flag config parser and subparser
+        p_file_flag_config = sp_file_flag.add_parser('config', help="Flag file(s) as %%config")
+        p_file_flag_config.add_argument('file_flag_config_files', metavar="files", 
+                                 nargs='*', help="Specify files to flag")
+        
+        # Create the file flag doc parser and subparser
+        p_file_flag_doc = sp_file_flag.add_parser('doc', help="Flag file(s) as %%doc")
+        p_file_flag_doc.add_argument('file_flag_doc_files', metavar="files", 
+                                 nargs='*', help="Specify files to flag")
+        
+        # Create the file database parser and subparser
+        p_file_database = sp_file.add_parser('database', help="File database commands")
+        
+        p_file_database.add_argument('--init', dest='file_database_initialize',
+                                     action="store_true",
+                                     help="(Re)initialize the project's file database")
+        
+        # Parse the command-line arguments
+        args = p.parse_args()
+        
+        # If debugging
+        if (args.debug):
+            log.setLevel(logging.DEBUG)
+            log.debug(args)
+            
+        # Configure the preference database
+        self.preferenceDatabaseConfigure()
+        
+        # If invoking configuration commands
+        if (args.sp == 'configure'):
+            if (args.preference_display):
+                self.preferenceDisplay()
+            elif (args.preference_name or args.preference_email):
+                if (args.preference_name):
+                    self.preferenceSetName(args.preference_name)
+                if (args.preference_email):
+                    self.preferenceSetEmail(args.preference_email)
+                self.preferenceDisplay()
+            elif (args.preference_reinitialize):
+                self.preferenceDatabaseConfigure(initialize=True)
+            else:
+                p_configure.print_help()
+        
+        # If invoking project management commands
+        elif (args.sp == 'project'):
+            
+            # If creating a new project
+            if (args.sp_project == 'create'):
+                if (args.project_name):
+                    self.createProject(args.project_name)
+            
+            # If renaming an existing project
+            if (args.sp_project == 'rename'):
+                if (args.project_name):
+                    # Set up the connection to the package database
+                    self.setupDatabase()                    
+                    self.renameProject(args.project_name)
+        
+        # If invoking build commands
+        elif (args.sp == 'build'):
+            
+            # Set up the connection to the package database
+            self.setupDatabase()
+            
+            # If building a spec file
+            if (args.sp_build == 'spec'):
+                if (args.build_spec):
+                    self.generateSpec(args.build_spec)
+                else:
+                    self.generateSpec()
+            
+            # If building metadata
+            elif (args.sp_build == 'meta'):
+                if (args.build_spec):
+                    self.generateMetadata(args.build_spec)
+                else:
+                    self.generateSpec()
+                    self.generateMetadata()
+            
+            # If building the entire package
+            elif (args.sp_build == 'package'):
+                if (args.build_spec):
+                    self.generateMetadata(args.build_spec)
+                else:
+                    self.generateSpec()
+                    self.generateMetadata()
+                self.buildPackage()
+            
+            # If no options are specified
+            else:
+                p_build.print_help()
+        
+        # If invoking the flag commands
+        elif (args.sp == 'file'):
+            
+            # Set up the connection to the package database
+            self.setupDatabase()
+            
+            # If we're listing files
+            if (args.sp_file == 'list'):
+                self.updateFileDatabase()
+                self.listFiles()
+                
+            # If we're adding files
+            elif (args.sp_file == 'include'):
+                self.updateFileDatabase()
+                for f in args.file_include_files:
+                    self.includeItem(f)
+            
+            # If we're removing files
+            elif (args.sp_file == 'exclude'):
+                self.updateFileDatabase()
+                if (args.file_exclude_files):
+                    for f in args.file_exclude_files:
+                        self.excludeItem(f)
+                else:
+                    p_file_exclude.print_help()
+            
+            # If we're flagging files
+            elif (args.sp_file == 'flag'):
+                self.updateFileDatabase()
+                if (args.sp_file_flag == 'normal'):
+                    for f in args.file_flag_normal_files:
+                        self.flagItemNormal(f)
+                elif (args.sp_file_flag == 'config'):
+                    for f in args.file_flag_config_files:
+                        self.flagItemConfig(f)
+                elif (args.sp_file_flag == 'doc'):
+                    for f in args.file_flag_doc_files:
+                        self.flagItemDoc(f)
+            
+            # If we're messing with the file database
+            elif (args.sp_file == 'database'):
+                if (args.file_database_initialize):
+                    self.initializeDatabase()
+                else:
+                    p_file_database.print_help()
+                
+            else:
+                p_file.print_help()
+
+    def preferenceDisplay(self):
+        """ Display the current user configuration """
+        p = Preference.get(1)
+        log.info("  Name:  %s" % (p.name))
+        log.info("  Email: %s" % (p.email))
+            
+    def preferenceSetName(self, name="Anonymous"):
+        """ Configure the name of the package builder """
+        log.info("Setting builder name...")
+        p = Preference.get(1)
+        p.name = name
+    
+    def preferenceGetName(self):
+        """ Return the currently configured builder's name """
+        p = Preference.get(1)
+        return p.name
+    
+    def preferenceSetEmail(self, email="None"):
+        """ Configure the email address of the package builder """
+        log.info("Setting builder email...")
+        p = Preference.get(1)
+        p.email = email
+        
+    def preferenceGetEmail(self):
+        """ Return the currently configure builder's email address """
+        p = Preference.get(1)
+        return p.email
+    
+    def preferenceDatabaseConfigure(self, initialize=False):
+        """ Configure/initialize the database """
+        
+        # Check to see if the preference database exists
+        #  If it doesn't, set it to be created
+        Dir(os.path.split(self.preference_path_database)[0])
+        if not (os.path.exists(self.preference_path_database)):
+            initialize = True
+        
+        # Set up the connection information for the sql object
+        connection_string = 'sqlite://%s' % (self.preference_path_database)
+        self.connection = connectionForURI(connection_string)
+        sqlhub.processConnection = self.connection
+        
+        # Create the database if needed
+        if (initialize):
+            Preference.dropTable(ifExists=True)
+            Preference.createTable()
+            Preference(name="Anonymous", email="None")
+            log.info("Preferences database initialized:")
+            self.preferenceDisplay()
+        
+        # Set up the globals
+        global PREFERENCE_NAME
+        PREFERENCE_NAME = self.preferenceGetName()
+        global PREFERENCE_EMAIL
+        PREFERENCE_EMAIL= self.preferenceGetEmail()
+
+    def setupDatabase(self):
+        """ Sets up the package database """
+        if (os.path.exists(self.path_database)):
+            self.connectToDatabase()
+        else:
+            log.error("")
+            log.error("ERROR:")
+            log.error("  Togo build environment could not be located.\n")
+            log.error("  Please run togo from the root of your")
+            log.error("  project directory.")
+            log.error("")
+            sys.exit(1)
+
+    def removeDatabase(self):
+        """ Remove the database file for this project """
+        os.remove(self.path_database)
+            
+    def connectToDatabase(self):
+        """ Connects to the package database """
+        connection_string = 'sqlite://%s' % (self.path_database)
+        self.connection = connectionForURI(connection_string)
+        sqlhub.processConnection = self.connection
+        self.transaction = self.connection.transaction()
+
+    def initializeDatabase(self):
+        """ Initializes the package database """
+        self.connectToDatabase()
+        
+        # Try to grab the existing Package object if it exists
+        try:
+            p = Package.get(1)
+        except:
+            p = None
+
+        Package.dropTable(ifExists=True)
+        Package.createTable(ifNotExists=True)
+        PackageFile.dropTable(ifExists=True)
+        PackageFile.createTable(ifNotExists=True)
+        Directive.dropTable(ifExists=True)
+        Directive.createTable(ifNotExists=True)
+        Attr.dropTable(ifExists=True)
+        Attr.createTable(ifNotExists=True)
+        
+        # Legacy table cleanup
+        FileFlag.dropTable(ifExists=True)
+
+        # If there was previous Package information, restore it
+        if (p):
+            Package(package_name=p.package_name,
+                    package_path_root=p.package_path_root,
+                    package_path_spec=p.package_path_spec,
+                    package_path_meta=p.package_path_meta,
+                    package_path_rpms=p.package_path_rpms)
+
+        # Initialize the directive types
+        Directive(name="%config",
+                  description="Configuration files.")
+        Directive(name="%dir",
+                  description="Directories.")
+        Directive(name="%doc",
+                  description="Documentation.")
+        Directive(name="%docdir",
+                  description="Documentation directories.")
+
+    def createProject(self, name):
+        """ Creates a new package and package database """
+        log.info("Creating new project...")
+        path = os.path.join(self.path_root, name)
+        if not (os.path.exists(path)):
+            d = Dir(path)
+            self.path_database = os.path.join(d.full_path, APPLICATION_DATABASE_NAME)
+            self.initializeDatabase()
+            os.chdir(name)
+            Package(package_name=name)
+        else:
+            log.error("  Can not create package at '%s'; path is already occupied." % (path))
+            sys.exit(1)
+        log.info('  New project created at: %s' % (path))
+    
+    def renameProject(self, name):
+        """ Renames an existing package """
+        
+        log.info("")
+        log.info("Attempting to rename the current project...")
+        
+        project_name_new = name
+        project_path_new = "../%s" % (project_name_new)
+        
+        log.info("  Checking to see if destination name is ok...")
+        if (os.path.exists(project_path_new)):
+            log.error("")
+            log.error("    ERROR: There is already something at the path '%s'" % (project_path_new))
+            log.error("")
+            log.error("    Please select another name or clear the destination.")
+            log.error("")
+            
+        else:
+        
+            # Try to grab the existing Package object if it exists
+            log.info("  Getting current project name...")
+            try:
+                p = Package.get(1)
+            except:
+                log.error("  Could not find existing Togo package information for this project.")
+            else:
+                
+                log.info("    Found: %s" % (p.package_name))
+                
+                project_name_old = p.package_name
+                project_path_old = "../%s" % (project_name_old)
+                
+                # Rename the package in the database
+                log.info("  Updating project name in the 'helper.db' database...")
+                p.package_name = name
+                log.info("    Done!")
+                
+                # Update the spec file
+                log.info("  Updating project name in './spec/header' file...")
+                os.system("sed -i -- 's/Name: %s/Name: %s/g' %s" % (project_name_old,
+                                                        project_name_new,
+                                                        'spec/header'))
+                log.info("    Done!")
+                
+                # Update the project directory name
+                log.info("  Renaming the current working directory...")
+                os.rename(project_path_old, project_path_new)
+                log.info("    Done!")
+                
+                log.info("")
+                log.info("  Rename complete; type 'cd .' to refresh your current working directory.")
+                log.info("")
+
+    def generateSpec(self, spec_file='generated.spec'):
+        """ Generates a spec file by the given name """
+        log.info('')
+        log.info("Generating spec file: %s" % (spec_file))
+        p = Package.get(1)
+        self.updateFileDatabase()
+        p.generateSpec(spec_file)
+        return spec_file
+
+    def generateMetadata(self, spec_file="generated.spec"):
+        log.info('')
+        log.info("Generating metadata using: %s" % (spec_file))
+        p = Package.get(1)
+        p.generateMetadata(spec_file)
+
+    def buildPackage(self):
+        log.info('')
+        log.info("Building the package...")
+        p = Package.get(1)
+        p.buildPackage()
+
+    def updateFileDatabase(self):
+        p = Package.get(1)
+        try:
+            p.updateFileList(self.transaction)
+        except:
+            log.error("ERROR: Database mismatch")
+            log.error("  Was this project created with an older version of Togo?")
+            log.error("  If so, you will need to re-initialize the file database using:")
+            log.error("")
+            log.error("  togo file database --init")
+            sys.exit(2)
+        else:
+            self.transaction.commit()
+
+    def includeItem(self, item):
+        p = Package.get(1)
+        p.includeItem(item)
+        
+    def excludeItem(self, item):
+        p = Package.get(1)
+        p.excludeItem(item)
+    
+    def flagItemNormal(self, item):
+        p = Package.get(1)
+        p.unflagItem(item)
+    
+    def flagItemConfig(self, item):
+        p = Package.get(1)
+        p.flagItem(item, "%config")
+    
+    def flagItemDoc(self, item):
+        p = Package.get(1)
+        p.flagItem(item, "%doc")
+
+    def listFiles(self):
+        p = Package.get(1)
+        p.listFiles()
+
+    def clearAllFlags(self):
+        p = Package.get(1)
+        p.clearAllFlags()
+
+        
+# Define the Preference object
+class Preference(SQLObject):
+    """ Contains the user-level preferences for the application """
+    name = StringCol()
+    email = StringCol()
+
+# Define the Package object
+class Package(SQLObject):
+
+    package_name = StringCol()
+    package_path_root = StringCol(default='./root')
+    #package_path_patches = StringCol(default='./patches')
+    #package_path_sources = StringCol(default='./sources')
+    package_path_spec = StringCol(default='./spec')
+    package_path_meta = StringCol(default='./meta')
+    package_path_rpms = StringCol(default='./rpms')
+
+    spec_section_extension = ''
+
+    def _init(self, *args, **keys):
+        SQLObject._init(self, *args, **keys)
+
+        self.spec_var_name = self.package_name
+
+        for item in dir(self):
+            if item.startswith('package_path_'):
+                Dir(getattr(self, item))
+
+        changelog_date = os.popen(r"date '+%a %b %d %Y'").read().strip()
+        default_changelog_date_string = "* %s %s <%s>" % (changelog_date, PREFERENCE_NAME, PREFERENCE_EMAIL)
+        default_changelog_date_string += "\n- Initial version."
+
+        self.default_spec_vars = [
+
+            {'#': 'The name of your package'},
+            {'Name' : self.package_name},
+            {'' : ''},
+
+            {'#': 'A short summary of your package'},
+            {'Summary' : 'None'},
+            {'' : ''},
+
+            {'#': 'The version of your package'},
+            {'Version' : '1.0'},
+            {'' : ''},
+
+            {'#': 'The release number of your package'},
+            {'Release' : '1'},
+            {'' : ''},
+
+            {'#': 'Any license you wish to list'},
+            {'License' : 'GNU GPL'},
+            {'' : ''},
+
+            {'#': 'What group this RPM would typically reside in'},
+            {'Group' : 'Applications/System'},
+            {'' : ''},
+
+            {'#': 'Who packaged this RPM'},
+            {'Packager' : '%s <%s>' % (PREFERENCE_NAME, PREFERENCE_EMAIL)},
+            {'' : ''},
+
+            {'#': 'The build architecture of this RPM (noarch/x86_64/i386/etc)'},
+            {'Buildarch' : 'noarch'},
+            {'' : ''},
+
+            {'#': 'You generally should not need to mess with this setting'},
+            {'Buildroot' : r'%{_tmppath}/%{name}'},
+            {'' : ''},
+
+            {'#': 'Change this extension to change the compression level in your RPM'},
+            {'#': ' tar / tar.gz / tar.bz2'},
+            {'Source0' : r'%{name}.tar'},
+            {'' : ''},
+
+            {'#': 'If this package has prerequisites, uncomment this line and'},
+            {'#': ' list them here - examples are already listed'},
+            {'#Requires' : 'bash, python >= 2.7'},
+            {'' : ''},
+
+            {'#': 'A more verbose description of your package'},
+            {'%' : r'description'},
+            {'' : 'None'},
+            {'' : ''},
+
+            {'#': 'You probably do not need to change this'},
+            {'%' : r'define debug_package %{nil}'},
+            {'' : ''},
+
+            {'#': 'If you are having trouble building a package and need to disable'},
+            {'#': ' automatic dependency/provides checking, uncomment this:'},
+            {'#' : r'AutoReqProv: no'},
+        ]
+
+        self.default_spec_sections = [
+            {'prep' : r'%prep' +'\n' + r'%setup -q -c'},
+            {'build' : r'%build'},
+            {'install' : r'%install' + '\n' + r'rsync -a . %{buildroot}/'},
+            {'clean' : r'%clean' + '\n' + r'rm -rf %{buildroot}'},
+            {'pre' : r'%pre'},
+            {'post' : r'%post'},
+            {'preun' : r'%preun'},
+            {'postun' : r'%postun'},
+            {'trigger' : r'#%trigger'},
+            {'triggerin' : r'#%triggerin'},
+            {'triggerun' : r'#%triggerun'},
+            {'changelog' : r'%changelog' + '\n' + default_changelog_date_string},
+        ]
+
+        f = File(os.path.join(self.package_path_spec, 'header'))
+        if (os.stat(f.full_path)[6] < 1):
+            for var in self.default_spec_vars:
+                f.write(var.keys()[0])
+                if (var.keys()[0] == '#'):
+                    f.write(' ')
+                elif (var.keys()[0] == '%'):
+                    pass
+                elif (var.keys()[0] == ''):
+                    pass
+                else:
+                    f.write(': ')
+                f.write(var.values()[0])
+                f.write('\n')
+        for section in self.default_spec_sections:
+            path_to_section = os.path.join(self.package_path_spec, section.keys()[0])
+            f = File(path_to_section + self.spec_section_extension)
+            if (os.stat(f.full_path)[6] < 1):
+                f.write(section.values()[0])
+                f.write('\n')
+
+    def generateSpec(self, output_file):
+        fd = open(output_file, 'w')
+        header_file_path = os.path.join(self.package_path_spec, 'header')
+        fd.write(File(header_file_path).read())
+        fd.write('\n')
+        for item in self.default_spec_sections:
+            fd.write(File(os.path.join(self.package_path_spec, item.keys()[0])
+                          + self.spec_section_extension).read())
+            fd.write('\n')
+        fd.write(r'%files')
+        fd.write('\n')
+        directives = list(Directive.select())
+        files = []
+
+        # Iterate over each file and check for file flags to generate
+        #  the %files section of the spec
+        for file in list(PackageFile.select(PackageFile.q.excluded==0,
+                                            orderBy=PackageFile.q.path)):
+            local_path = '%s%s'% (self.package_path_root, file.path)
+            permissions = oct(os.stat(local_path).st_mode & 0777)
+            write_string = "%%attr(%s, root, root) " % (permissions)
+            if (len(file.directives)):
+                for directive in file.directives:
+                    write_string += '%s "%s' % (directive.name, file.path)
+                    if (directive.name == "%doc"):
+                        write_string += ".gz"
+                    write_string += '"'
+            else:
+                write_string += '"%s"' % (file.path)
+
+            if (write_string):
+                files.append(write_string)
+
+        for file in files:
+            fd.write(file)
+            fd.write('\n')
+        fd.write('\n')
+        fd.close()
+
+    def updateFileList(self, transaction=None):
+        log.debug("Scanning for file structure changes...")
+        
+        # Account for python scripts which need to be bytecompiled before inclusion
+        compileall.compile_dir('root/', quiet=True) # Generate *.pyc
+        os.system("python -O -m compileall root/ > /dev/null 2>&1")  # Generate *.pyo
+        
+        process = subprocess.Popen('find %s' % (self.package_path_root), shell=True,
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   close_fds=True)
+        si, so, se = process.stdin, process.stdout, process.stderr
+        current_file_list = so.readlines()
+        current_files = {}
+        prefix_length = len(self.package_path_root)
+        # Create a dictionary of the current files under the package root
+        for file in current_file_list:
+            converted_file_path = file.strip()[prefix_length:]
+            if (converted_file_path != ''):
+                current_files[converted_file_path] = ''
+
+        # Iterate over all files in the database and remove those which no longer exist
+        for file in list(PackageFile.select()):
+            try:
+                current_files[file.path]
+            except:
+                pf = PackageFile.selectBy(path=file.path, connection=transaction)[0]
+                PackageFile.delete(pf.id, connection=transaction)
+                log.debug("  Removed '%s'" % (file.path))
+
+        # Add new files to package database
+        dir_directive = Directive.select(Directive.q.name=="%dir")[0]
+        for file in current_file_list:
+            converted_file_path = file.strip()[prefix_length:]
+            if (converted_file_path != ''):
+                try:
+                    pf = PackageFile(path=converted_file_path, connection=transaction)
+                except:
+                    pass
+                else:
+                    if (os.path.isdir(file.strip()) and not os.path.islink(file.strip())):
+                        pf.addDirective(dir_directive)
+                    log.debug("  Added '%s'" % (converted_file_path))
+
+        log.debug("  Scan complete.")
+
+    def generateMetadata(self, spec_file):
+        self.cleanRedHatDir()
+        self.makeDirStructure(spec_file)
+        self.tarMainSource(spec_file)
+
+    def cleanRedHatDir(self):
+        """ Removes old build instances in current projects directory """
+        meta_path = os.path.join(self.package_path_meta, '*')
+        log.info('')
+        log.info('Cleaning Metadata')
+        log.info('  Removing old files from:')
+        log.info('    %s' % (meta_path))
+        execute = 'rm -rf %s 2> /dev/null' % (meta_path)
+        os.system(execute)
+        log.info('')
+
+    def makeDirStructure(self, spec_file):
+        """ Creates build directory structure """
+        meta_path = os.path.abspath(os.path.join(self.package_path_meta))
+        log.info('Creating Metadata Structure')
+        log.info('  Creating directory structure under: %s' % (meta_path))
+        os.system('mkdir -p %s/usr/src/redhat' % (meta_path))
+        dirs = ("BUILD", "RPMS", "SOURCES", "SPECS", "SRPMS")
+        for dir in dirs:
+            dir_path = os.path.join(meta_path, 'redhat', dir)
+            log.info("    Creating dir '%s'" % (dir_path))
+            os.system('mkdir -p %s' % (dir_path))
+            #link_path = os.path.join(meta_path, 'usr', 'src', 'redhat', dir)
+            #log.info("     Linking %s to %s" % (dir_path, link_path))
+            #os.system('ln -s %s %s' % (dir_path, link_path))
+        spec_link_path = os.path.join(meta_path, 'redhat', 'SPECS', os.path.basename(spec_file))
+        spec_file_path = os.path.join(meta_path, '..', spec_file)
+        log.info('    Linking %s to %s' % (spec_file, spec_link_path))
+        os.system('ln -s %s %s' % (spec_file_path, spec_link_path))
+        log.info('')
+
+    def tarMainSource(self, spec_file):
+        """ Build tarball of the SOURCE directory for togobuild """
+        excludes = ['.svn', '.pyo']
+        compression_types = [{'tar': ''},
+                             {'tar.gz': 'z'},
+                             {'tar.bz': 'j'},
+                             {'tar.bz2':'j'},
+                             {'gz': 'z'},
+                             {'bz': 'j'},
+                             {'bz2': 'j'}]
+        tar_args = 'c'
+
+        # Determine desired compression type
+        try:
+            specified_compression_type = os.popen('grep Source0 %s' % (spec_file)).readlines()[0].strip()
+        except:
+            log.error("Can't find source line in specified tar. Unable to determine compression level.")
+            sys.exit(1)
+        for type in compression_types:
+            if (specified_compression_type.endswith(type.keys()[0])):
+                tar_extension = type.keys()[0]
+                tar_args += type.values()[0]
+                break
+        tar_args += 'f'
+
+        log.info('Creating Compressed Source')
+        log.info('  Compressing...')
+        expanded = " ".join(["--exclude %s" % (v) for v in excludes])
+        source_path = os.path.join(self.package_path_meta, 'redhat', 'SOURCES', self.package_name)
+        execute = 'tar -C %s -%s %s.%s . %s' % (self.package_path_root, tar_args, source_path, tar_extension, expanded)
+        os.system(execute)
+        log.info('    Done')
+        log.info('')
+
+    def setUserVars(self):
+        """ Sets up the ~/.rpmmacros file. """
+        import socket
+        hostname = socket.gethostname()
+        identity = os.getenv('USER')
+        macros_file = os.path.expanduser('~/.rpmmacros')
+        log.info('')
+        log.info('Setting Up Environment Variables')
+        fd = open(macros_file, 'w')
+        log.info('  Setting gpg key macros')
+        fd.write(r"%_signature     gpg")
+        fd.write("\n")
+        fd.write(r"%_gpg_path      ~/.gnupg")
+        fd.write("\n")
+        fd.write(r"%_gpg_name      ")
+        fd.write(identity + '@' + hostname)
+        fd.write('\n')
+        fd.write("%_gpgbin        /usr/bin/gpg")
+        fd.close()
+        log.info('')
+
+    def buildPackage(self):
+        self.setUserVars()
+        self.rpmBuild()
+        self.moveRPMs()
+
+    def rpmBuild(self):
+        """ Execute and Time the RPM build """
+        log.info('Building the RPM')
+        log.info('==================================')
+        spec_path = os.path.join(self.package_path_meta, 'redhat', 'SPECS', '*.spec')
+        exec_string = "time rpmbuild --define '_topdir %s' -bb %s" % (
+            os.path.join(os.getcwd(), 'meta', 'redhat'),
+            spec_path)
+        log.info("")
+        log.info("Executing:")
+        log.info("%s" % (exec_string))
+        log.info("")
+        os.system(exec_string)
+        log.info('')
+
+    def moveRPMs(self):
+        rpms_path = os.path.join(self.package_path_meta, 'redhat', 'RPMS')
+        os.system('mv -v `find %s | grep .rpm` %s &>/dev/null' % (rpms_path, self.package_path_rpms))
+        log.info('Any generated RPMs are in: %s' % (self.package_path_rpms))
+    
+    def getPackageFile(self, item):
+        """ Tries to find and return a PackageFile """
+        if not (os.path.exists(item)):
+            log.error("Couldn't find the specified file/dir to flag.")
+            log.error("  %s" % (item))
+            sys.exit(1)
+        
+        item = os.path.abspath(item)
+        strip_string = os.path.abspath(self.package_path_root)
+        converted_item = re.sub(strip_string, '', item)
+        
+        try:
+            item = list(PackageFile.selectBy(path=converted_item))[0]
+        except:
+            print "Couldn't find '%s' in the file/dir database." % (converted_item)
+            sys.exit(1)
+        else:
+            return item
+
+    def includeItem(self, item):
+        """ Adds a file/dir to the final RPM """
+
+        item = self.getPackageFile(item)
+
+        # Check to make sure the item is a directory
+        relative_path = "%s%s" % (self.package_path_root, item.path)
+        if not (os.path.isdir(relative_path)):
+            log.error("ERROR: You may only exclude directories.")
+            sys.exit(2)
+
+        item.excluded = False
+        item.sync()
+        log.info("  Added '%s' to project ownership." % (item.path))
+        
+    def excludeItem(self, item):
+        """ Excludes a file/dir from the final RPM """
+        item = self.getPackageFile(item)
+        
+        # Check to make sure the item is a directory
+        relative_path = "%s%s" % (self.package_path_root, item.path)
+        if not (os.path.isdir(relative_path)):
+            log.error("ERROR: You may only exclude directories.")
+            sys.exit(2)
+        
+        # Cascade the exclude down the directory tree
+        while (True):
+            item.excluded = True
+            item.sync()
+            log.info("  Removed '%s' from project ownership." % (item.path))
+            basename = os.path.dirname(item.path)
+            try:
+                item = list(PackageFile.selectBy(path=basename))[0]
+            except IndexError:
+                break
+    def unflagItem(self, item):
+        item = self.getPackageFile(item)
+        log.debug("Unflagging '%s'..." % (item.path))
+        relative_path = "%s%s" % (self.package_path_root, item.path)
+        for d in item.directives:
+            item.removeDirective(d)
+        if (os.path.isdir(relative_path)):
+            directive = Directive.select(Directive.q.name=="%dir")[0]
+            item.addDirective(directive)
+        item.sync()
+        log.debug("  Done!")
+            
+    def flagItem(self, item, directive):
+        item = self.getPackageFile(item)
+        log.debug("Flagging '%s' as '%s'..." % (item.path, directive))
+        relative_path = "%s%s" % (self.package_path_root, item.path)
+        
+        if (directive == "%doc"):
+            if (os.path.isdir(relative_path)):
+                directive = "%docdir"
+        directive = Directive.select(Directive.q.name==directive)[0]
+        
+        # Clear the existing flag
+        for d in item.directives:
+            item.removeDirective(d)
+        
+        # Add the specified directive
+        item.addDirective(directive)
+        item.sync()
+        log.debug("  Done!")
+
+    def listFiles(self):
+        files = list(PackageFile.select(PackageFile.q.excluded==0, orderBy="path"))
+        if (files):
+            for f in files:
+                try:
+                    directive = f.directives[0]
+                except IndexError:
+                    log.info("\t%s" % (f.path))
+                else:
+                    log.info("%s\t%s" % (directive.name, f.path))
+        else:
+            log.info("  No files are currently in this project.")
+
+class PackageFile(SQLObject):
+    class sqlmeta:
+        lazyUpdate = True
+
+    path = StringCol(unique=True)
+    excluded = BoolCol(default=False)
+    directives = RelatedJoin('Directive')
+    attrs = RelatedJoin('Attr')
+
+class Directive(SQLObject):
+    class sqlmeta:
+        lazyUpdate = True
+
+    name = StringCol()
+    description = StringCol()
+    package_files = RelatedJoin('PackageFile')
+    
+class Attr(SQLObject):
+    class sqlmeta:
+        lazyUpdate = True
+    
+    mode = StringCol()
+    user = StringCol()
+    grp = StringCol()
+    package_files = RelatedJoin('PackageFile')
+
+# Included for legacy cleanup purposes
+class FileFlag(SQLObject):
+    pass
+   
+class File:
+    def __init__(self, full_path):
+        self.full_path = full_path
+        self.path, self.base_name = os.path.split(self.full_path)
+        self.create()
+
+    def create(self):
+        os.system('mkdir -p %s' % (self.path))
+        self.touch()
+
+    def touch(self):
+        os.system('touch %s' % (self.full_path))
+
+    def read(self):
+        fd = open(self.full_path, 'r')
+        data = fd.read()
+        fd.close()
+        return data
+
+    def write(self, data):
+        fd = open(self.full_path, 'a')
+        fd.write(data)
+        fd.close()
+
+    def getPath(self):
+        return self.full_path
+
+    def getBasePath(self):
+        return self.path
+
+    def getName(self):
+        return self.base_name
+
+class Dir:
+    def __init__(self, full_path, fail_on_exist=False, fail_on_missing=False):
+        self.full_path = full_path
+        if (fail_on_exist) and (os.path.exists(self.full_path)):
+            log.error("Existing directory found at %s" % (self.full_path))
+            sys.exit()
+        elif (fail_on_missing) and not (os.path.exists(self.full_path)):
+            log.error("Directory does not exist.")
+            sys.exit()
+        else:
+            self.create()
+
+    def create(self):
+        os.system('mkdir -p %s' % (self.full_path))
+
+    def getPath(self):
+        return self.full_path
+
+togo = Application()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
