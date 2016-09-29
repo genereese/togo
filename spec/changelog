@@ -5,6 +5,7 @@ preventing the option from functioning properly. This fix will only apply to
 newly generated spec files. If you need to disable automatic dependency checks
 in your existing projects, please move the 'AutoReqProv: no' line above the
 'description' directive in the 'spec/header'file of your project.
+- Add BuildRequires for togo to its spec file
 
 * Sat May 7 2016 Gene Reese <gene.reese@xirsix.com>
 - Changed path of togo script
