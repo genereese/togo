@@ -28,12 +28,12 @@ Download and install togo using whatever method is most convenient:
 
 ##### Using yum
 ```
-$ sudo yum install https://github.com/genereese/togo/releases/download/v2.3r1/togo-2.3-2.noarch.rpm
+$ sudo yum install https://github.com/genereese/togo/releases/download/v2.3r1/togo-2.3-3.noarch.rpm
 ```
 
 ##### Using dnf
 ```
-$ sudo dnf install https://github.com/genereese/togo/releases/download/v2.3r1/togo-2.3-2.noarch.rpm
+$ sudo dnf install https://github.com/genereese/togo/releases/download/v2.3r1/togo-2.3-3.noarch.rpm
 ```
 
 ##### Manual install
