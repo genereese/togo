@@ -622,6 +622,11 @@ class Package(SQLObject):
             {'#': ' tar / tar.gz / tar.bz2'},
             {'Source0' : r'%{name}.tar'},
             {'' : ''},
+            
+            {'#': 'If you are having trouble building a package and need to disable'},
+            {'#': ' automatic dependency/provides checking, uncomment this:'},
+            {'#' : r'AutoReqProv: no'},
+            {'' : ''},
 
             {'#': 'If this package has prerequisites, uncomment this line and'},
             {'#': ' list them here - examples are already listed'},
@@ -637,9 +642,6 @@ class Package(SQLObject):
             {'%' : r'define debug_package %{nil}'},
             {'' : ''},
 
-            {'#': 'If you are having trouble building a package and need to disable'},
-            {'#': ' automatic dependency/provides checking, uncomment this:'},
-            {'#' : r'AutoReqProv: no'},
         ]
 
         self.default_spec_sections = [
@@ -852,9 +854,9 @@ class Package(SQLObject):
         fd.write("%_gpgbin        /usr/bin/gpg")
         if (disable_dependency_generation):
             fd.write('\n')
-            fd.write(r"%__find_requires %{nil}")
+            fd.write(r"%_use_internal_dependency_generator %{nil}")            
             fd.write('\n')
-            fd.write(r"%_use_internal_dependency_generator %{nil}")
+            fd.write(r"%__find_requires %{nil}")
         fd.close()
         log.info('')
 
