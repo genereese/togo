@@ -466,14 +466,12 @@ class Application:
                 # Rename the package in the database
                 log.info("  Updating project name in the 'helper.db' database...")
                 p.package_name = name
-                log.info("    Done!")
                 
                 # Update the spec file
                 log.info("  Updating project name in './spec/header' file...")
                 os.system("sed -i -- 's/Name: %s/Name: %s/g' %s" % (project_name_old,
                                                         project_name_new,
                                                         'spec/header'))
-                log.info("    Done!")
                 
                 # Update the project directory name
                 log.info("  Renaming the current working directory...")
