@@ -847,7 +847,7 @@ class Package(SQLObject):
         fd.write(r"%_gpg_path      ~/.gnupg")
         fd.write("\n")
         fd.write(r"%_gpg_name      ")
-        fd.write(identity + '@' + hostname)
+        fd.write(PREFERENCE_NAME +" <"+ PREFERENCE_EMAIL + ">")
         fd.write('\n')
         fd.write("%_gpgbin        /usr/bin/gpg")
         if (disable_dependency_generation):
