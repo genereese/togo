@@ -2,6 +2,7 @@
 
 import compileall
 import exceptions
+import fileinput
 import logging
 import optparse
 import os
@@ -118,6 +119,10 @@ class Application:
         p_build_package = sp_build.add_parser('package', help="Build the package")
         p_build_package.add_argument('-s', metavar='specfile', dest="build_spec",
                                  help="Specify a spec file")
+        p_build_package.add_argument('-v', '--version', metavar='version',
+                                     dest="build_version", help="Specify build version")
+        p_build_package.add_argument('-r', '--release', metavar='release',
+                                     dest="build_release", help="Specify build release")        
         p_build_package.add_argument('--nodeps', dest="build_nodeps", action="store_true",
                                          help="Disable automatic dependency generation")        
         
@@ -232,6 +237,11 @@ class Application:
             
             # If building the entire package
             elif (args.sp_build == 'package'):
+                if (args.build_version):
+                    self.replaceInSpecHeader("Version", args.build_version)
+                if (args.build_release):
+                    self.replaceInSpecHeader("Release", args.build_release)
+
                 if (args.build_spec):
                     self.generateMetadata(args.build_spec)
                 else:
@@ -241,6 +251,7 @@ class Application:
                     disable_dependency_generation = True
                 else:
                     disable_dependency_generation = False
+                    
                 self.buildPackage(disable_dependency_generation)
             
             # If no options are specified
@@ -454,7 +465,7 @@ class Application:
             log.info("  Getting current project name...")
             try:
                 p = Package.get(1)
-            except:
+            except SQLObjectNotFound:
                 log.error("  Could not find existing Togo package information for this project.")
             else:
                 
@@ -468,11 +479,9 @@ class Application:
                 p.package_name = name
                 
                 # Update the spec file
-                log.info("  Updating project name in './spec/header' file...")
-                os.system("sed -i -- 's/Name: %s/Name: %s/g' %s" % (project_name_old,
-                                                        project_name_new,
-                                                        'spec/header'))
-                
+                log.info("  Updating project name in '%s/header' file..." % p.package_path_spec)
+                self.replaceInSpecHeader("Name", project_name_new)
+               
                 # Update the project directory name
                 log.info("  Renaming the current working directory...")
                 os.rename(project_path_old, project_path_new)
@@ -481,6 +490,34 @@ class Application:
                 log.info("")
                 log.info("  Rename complete; type 'cd .' to refresh your current working directory.")
                 log.info("")
+    
+    def replaceInSpecHeader(self, variable, value):
+        """ Replace a variable value within the spec/header file """
+        
+        try:
+            p = Package.get(1)
+        except SQLObjectNotFound:
+            log.error("  Could not find existing Togo package information for this project.")
+        else:
+            header = open('%s/header' % (p.package_path_spec), 'r')
+            header_data = []
+            for line in header.readlines():
+                header_data.append(line)
+            header.close()
+                
+            # Search for and update the specified line
+            index = 0
+            for line in header_data:
+                if not (line.find(variable)):
+                    new_line = "%s: %s\n" % (variable, value)
+                    header_data[index] = new_line
+                    exit
+                index += 1            
+                    
+            # Write the new header data back out to file
+            header = file('%s/header' % (p.package_path_spec), 'w')
+            header.writelines(header_data)
+            header.close()
 
     def generateSpec(self, spec_file='generated.spec'):
         """ Generates a spec file by the given name """
