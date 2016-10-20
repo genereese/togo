@@ -834,9 +834,6 @@ class Package(SQLObject):
 
     def setUserVars(self, disable_dependency_generation=False):
         """ Sets up the ~/.rpmmacros file. """
-        import socket
-        hostname = socket.gethostname()
-        identity = os.getenv('USER')
         macros_file = os.path.expanduser('~/.rpmmacros')
         log.info('')
         log.info('Setting Up Environment Variables')
