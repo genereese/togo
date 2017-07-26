@@ -1,4 +1,7 @@
 %changelog
+* Tue Jul 25 2017 Gene Reese <gene.reese@xirsix.com>
+- Build package option will now also build the associated source RPM
+
 * Thu Oct 20 2016 Gene Reese <gene.reese@xirsix.com>
 - Minor changes to .rpmmacros in preparation of gpg signing support
 - Added command line arguments to modify build version and release

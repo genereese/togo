@@ -5,10 +5,10 @@ Name: togo
 Summary: A quick, easy, and powerful RPM authoring tool
 
 # The version of your package
-Version: 2.3
+Version: 2.4
 
 # The release number of your package
-Release: 7
+Release: 1
 
 # Any license you wish to list
 License: GNU GPL
