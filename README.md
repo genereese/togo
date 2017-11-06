@@ -1,3 +1,5 @@
+##### Scroll down to see a super-fast example of Togo in action.
+
 If you have any questions, problems, suggestions, or just plain like the software, please email me at gene.reese@xirsix.com to let me know; I base how much work I put in on my projects off how many people find them useful.
 
 If you find Togo useful, please also consider upvoting my answer at StackOverflow to spread the word about it:
