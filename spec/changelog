@@ -1,4 +1,7 @@
 %changelog
+* Sun Mar 18 2018 Gene Reese <gene.reese@xirsix.com>
+- Added support for %config(noreplace) file flag
+
 * Tue Jul 25 2017 Gene Reese <gene.reese@xirsix.com>
 - Build package option will now also build the associated source RPM
 
