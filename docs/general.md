@@ -24,6 +24,8 @@ Examples include:
   * Altering configuration files
   * Changing file/directory ownership/permissions
 
+NOTE: Changing file ownership here works, but can cause auditing (RMP -V) to fail. This is not an issue unless you audit your environments and a near future version of Togo will add user/group support directly to remedy this.
+
 ##### preun
 This file is an empty shell script that may be used to ensure certain things are done before your RPM is removed from a system.
 
