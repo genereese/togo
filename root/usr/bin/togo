@@ -21,7 +21,7 @@ from argparse import RawTextHelpFormatter
 try:
     from sqlobject import *
 except ImportError:
-    raise exceptions.Exception("'python-sqlobject' package not installed.")
+    raise exceptions.Exception("'python2-sqlobject' package not installed.")
 
 # Ensure 'date' uses english names for months etc.
 os.environ['LC_ALL'] = "C"
