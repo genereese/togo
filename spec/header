@@ -5,7 +5,7 @@ Name: togo
 Summary: A quick, easy, and powerful RPM authoring tool
 
 # The version of your package
-Version: 2.5
+Version: 2.6
 
 # The release number of your package
 Release: 1
@@ -34,7 +34,7 @@ BuildRequires: rsync
 
 # If this package has prerequisites, uncomment this line and
 #  list them here - examples are already listed
-Requires: bash, python >= 2.5, python-sqlobject, rpm-build, rsync, sed
+Requires: bash, python >= 2.5, rpm-build, rsync
 
 # A more verbose description of your package
 %description

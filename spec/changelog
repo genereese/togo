@@ -1,4 +1,10 @@
 %changelog
+* Sun Oct 13 2019 Gene Reese <gene.reese@xirsix.com>
+- Modified togo to explicitly use python2
+- Modified installation script to use either the 'python-sqlobject' rpm,
+or the 'pip' package - 'sqlobject'
+- Updated togo package's dependencies to remove 'python-sqlobject' and 'sed'
+
 * Sun Mar 18 2018 Gene Reese <gene.reese@xirsix.com>
 - Added support for %config(noreplace) file flag
 
