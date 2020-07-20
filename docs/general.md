@@ -54,4 +54,8 @@ If you need to add more than a single trigger, you may do so in these files; the
 
 For more details, you may read up on triggers, here:
 
-http://rpm.org/api/4.4.2.2/triggers.html
+https://rpm.org/user_doc/file_triggers.html
+
+-and see some examples of triggers, here:
+
+http://ftp.rpm.org/api/4.4.2.2/triggers.html
