@@ -16,6 +16,8 @@ jobs:
         run: ./build-togo.sh
       - name: "Test and install the rpm"
         run: dnf install -y rpms/*.rpm
+      - name: "Move rpm and give it a simple name"
+        run: mv rpms/togo*.rpm rpms/togo.rpm
       - name: "Create release"
         uses: actions/create-release@v1
         id: create_release
@@ -31,6 +33,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./rpms/*rpm
+          asset_path: ./rpms/togo.rpm
           asset_name: togo.rpm
           asset_content_type: application/octet-stream
