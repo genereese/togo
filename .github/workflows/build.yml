@@ -15,4 +15,4 @@ jobs:
       - name: "Create rpm"
         run: ./build-togo.sh
       - name: "Test and install the rpm"
-        run: dnf install rpms/*.rpm
+        run: dnf install -y rpms/*.rpm
