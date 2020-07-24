@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: "Install build dependencies"
-        run: dnf install python2 python2-pip rpm-build rsync
+        run: dnf install -y python2 python2-pip rpm-build rsync
       - name: "Create rpm"
         run: ./build-togo.sh
       - name: "Test and install the rpm"
