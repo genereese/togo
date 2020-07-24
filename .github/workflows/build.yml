@@ -22,6 +22,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
+          tag_name: ${{ github.sha }}
+          release_name: ${{ github.sha }}
           draft: true
+      - name: "Upload togo rpm"
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: rpms/*rpm
+          asset_name: togo.rpm
+          asset_content_type: application/octet-stream
