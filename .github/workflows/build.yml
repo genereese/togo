@@ -1,0 +1,16 @@
+name: build
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: centos:8
+    steps:
+      - uses: actions/checkout@v2
+      - name: "Install build dependencies"
+        run: dnf install python2 python2-pip rpm-build rsync
+      - name: "Create rpm"
+        run: ./build-togo.sh
+      - name: "Test and install the rpm"
+        run: dnf install rpms/*.rpm
