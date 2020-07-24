@@ -10,6 +10,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: "Install build dependencies"
         run: dnf install -y python2 python2-pip rpm-build rsync
+      - name: Install python dependencies
+        run: pip2 install SQLObject
       - name: "Create rpm"
         run: ./build-togo.sh
       - name: "Test and install the rpm"
