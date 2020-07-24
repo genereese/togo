@@ -1,1 +1,2 @@
 %post
+pip2 install SQLObject
