@@ -4,7 +4,7 @@ echo
 echo "Checking build dependencies..."
 echo
 
-rpm -q rpm-build rsync python2 python2-sqlobject
+rpm -q rpm-build rsync python2 python2-pip
 
 if [ $? -ne 0 ]; then
 	echo
