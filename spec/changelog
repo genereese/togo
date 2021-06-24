@@ -1,4 +1,7 @@
 %changelog
+* Thu Jun 24 2021 Gene Reese <gene.reese@xirsix.com>
+- Modified togo to utilize python 3
+
 * Sun Oct 13 2019 Gene Reese <gene.reese@xirsix.com>
 - Modified togo to explicitly use python2
 - Modified installation script to use either the 'python2-sqlobject' rpm,

@@ -1,10 +1,9 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 import compileall
-import exceptions
-import fileinput
+###import fileinput
 import logging
-import optparse
+###import optparse
 import os
 import re
 import subprocess
@@ -14,14 +13,17 @@ import sys
 try:
     import argparse
 except ImportError:
-    raise exceptions.Exception("'python-argparse' package not installed.")
-from argparse import RawTextHelpFormatter
+    raise Exception("'python-argparse' package not installed.")
+###from argparse import RawTextHelpFormatter
 
 # Attempt sqlpobject import
 try:
-    from sqlobject import *
+    from sqlobject import SQLObject
+    from sqlobject import RelatedJoin, BoolCol, StringCol
+    from sqlobject import connectionForURI, sqlhub
+    from sqlobject import SQLObjectNotFound
 except ImportError:
-    raise exceptions.Exception("'python2-sqlobject' package not installed.")
+    raise Exception("'python-sqlobject' package not installed.")
 
 # Ensure 'date' uses english names for months etc.
 os.environ['LC_ALL'] = "C"
@@ -54,7 +56,7 @@ class Application:
         # Override default argparse behavior
         class TogoParser(argparse.ArgumentParser):
             def error(self, message):
-                print 'error: %s\n' % (message)
+                print('error: %s\n' % (message))
                 self.print_help()
                 print
                 sys.exit(2)
@@ -560,7 +562,7 @@ class Application:
                 index += 1            
                     
             # Write the new header data back out to file
-            header = file('%s/header' % (p.package_path_spec), 'w')
+            header = open('%s/header' % (p.package_path_spec), 'w')
             header.writelines(header_data)
             header.close()
 
@@ -755,22 +757,22 @@ class Package(SQLObject):
         f = File(os.path.join(self.package_path_spec, 'header'))
         if (os.stat(f.full_path)[6] < 1):
             for var in self.default_spec_vars:
-                f.write(var.keys()[0])
-                if (var.keys()[0] == '#'):
+                f.write(list(var.keys())[0])
+                if (list(var.keys())[0] == '#'):
                     f.write(' ')
-                elif (var.keys()[0] == '%'):
+                elif (list(var.keys())[0] == '%'):
                     pass
-                elif (var.keys()[0] == ''):
+                elif (list(var.keys())[0] == ''):
                     pass
                 else:
                     f.write(': ')
-                f.write(var.values()[0])
+                f.write(list(var.values())[0])
                 f.write('\n')
         for section in self.default_spec_sections:
-            path_to_section = os.path.join(self.package_path_spec, section.keys()[0])
+            path_to_section = os.path.join(self.package_path_spec, list(section.keys())[0])
             f = File(path_to_section + self.spec_section_extension)
             if (os.stat(f.full_path)[6] < 1):
-                f.write(section.values()[0])
+                f.write(list(section.values())[0])
                 f.write('\n')
 
     def generateSpec(self, output_file):
@@ -779,7 +781,7 @@ class Package(SQLObject):
         fd.write(File(header_file_path).read())
         fd.write('\n')
         for item in self.default_spec_sections:
-            fd.write(File(os.path.join(self.package_path_spec, item.keys()[0])
+            fd.write(File(os.path.join(self.package_path_spec, list(item.keys())[0])
                           + self.spec_section_extension).read())
             fd.write('\n')
         fd.write(r'%files')
@@ -792,7 +794,7 @@ class Package(SQLObject):
         for file in list(PackageFile.select(PackageFile.q.excluded==0,
                                             orderBy=PackageFile.q.path)):
             local_path = '%s%s'% (self.package_path_root, file.path)
-            permissions = oct(os.stat(local_path).st_mode & 0777)
+            permissions = oct(os.stat(local_path).st_mode & 0x777)
             write_string = "%%attr(%s, root, root) " % (permissions)
             if (len(file.directives)):
                 for directive in file.directives:
@@ -828,7 +830,7 @@ class Package(SQLObject):
         prefix_length = len(self.package_path_root)
         # Create a dictionary of the current files under the package root
         for file in current_file_list:
-            converted_file_path = file.strip()[prefix_length:]
+            converted_file_path = bytes.decode(file.strip()[prefix_length:])
             if (converted_file_path != ''):
                 current_files[converted_file_path] = ''
 
@@ -844,7 +846,7 @@ class Package(SQLObject):
         # Add new files to package database
         dir_directive = Directive.select(Directive.q.name=="%dir")[0]
         for file in current_file_list:
-            converted_file_path = file.strip()[prefix_length:]
+            converted_file_path = bytes.decode(file.strip()[prefix_length:])
             if (converted_file_path != ''):
                 try:
                     pf = PackageFile(path=converted_file_path, connection=transaction)
@@ -912,9 +914,9 @@ class Package(SQLObject):
             log.error("Can't find source line in specified tar. Unable to determine compression level.")
             sys.exit(1)
         for type in compression_types:
-            if (specified_compression_type.endswith(type.keys()[0])):
-                tar_extension = type.keys()[0]
-                tar_args += type.values()[0]
+            if (specified_compression_type.endswith(list(type.keys())[0])):
+                tar_extension = list(type.keys())[0]
+                tar_args += list(type.values())[0]
                 break
         tar_args += 'f'
 
@@ -922,7 +924,7 @@ class Package(SQLObject):
         log.info('  Compressing...')
         expanded = " ".join(["--exclude %s" % (v) for v in excludes])
         source_path = os.path.join(self.package_path_meta, 'redhat', 'SOURCES', self.package_name)
-        execute = 'tar -C %s -%s %s.%s . %s' % (self.package_path_root, tar_args, source_path, tar_extension, expanded)
+        execute = 'tar %s -C %s -%s %s.%s .' % (expanded, self.package_path_root, tar_args, source_path, tar_extension)
         os.system(execute)
         log.info('    Done')
         log.info('')
@@ -993,7 +995,7 @@ class Package(SQLObject):
         try:
             item = list(PackageFile.selectBy(path=converted_item))[0]
         except:
-            print "Couldn't find '%s' in the file/dir database." % (converted_item)
+            print("Couldn't find '%s' in the file/dir database." % (converted_item))
             sys.exit(1)
         else:
             return item
