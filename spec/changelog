@@ -1,6 +1,7 @@
 %changelog
 * Thu Jun 24 2021 Gene Reese <gene.reese@xirsix.com>
 - Modified togo to utilize python 3
+- Suppressed a cleanup error message that occurs from a bug in sqlobject codebase
 
 * Sun Oct 13 2019 Gene Reese <gene.reese@xirsix.com>
 - Modified togo to explicitly use python2

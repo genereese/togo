@@ -8,7 +8,7 @@ Summary: A quick, easy, and powerful RPM authoring tool
 Version: 3.0
 
 # The release number of your package
-Release: 1
+Release: 3
 
 # Any license you wish to list
 License: GNU GPL
