@@ -58,7 +58,7 @@ class Application:
             def error(self, message):
                 print('error: %s\n' % (message))
                 self.print_help()
-                print
+                print("")
                 sys.exit(2)
         
         # Create the main parser
@@ -218,13 +218,14 @@ class Application:
             if (args.sp_project == 'create'):
                 if (args.project_name):
                     self.createProject(args.project_name)
-            
             # If renaming an existing project
-            if (args.sp_project == 'rename'):
+            elif (args.sp_project == 'rename'):
                 if (args.project_name):
                     # Set up the connection to the package database
                     self.setupDatabase()                    
                     self.renameProject(args.project_name)
+            else:
+                p_project.print_help()
         
         # If invoking build commands
         elif (args.sp == 'build'):
@@ -270,7 +271,7 @@ class Application:
             else:
                 p_build.print_help()
         
-        # If invoking the flag commands
+        # If invoking the file commands
         elif (args.sp == 'file'):
             
             # Set up the connection to the package database
@@ -303,19 +304,22 @@ class Application:
             elif (args.sp_file == 'flag'):
                 self.verifyDirectiveData()
                 self.updateFileDatabase()
-                if (args.file_flag_files):
-                    if (args.sp_file_flag == 'normal'):
-                        for f in args.file_flag_files:
-                            self.flagItemNormal(f)
-                    elif (args.sp_file_flag == 'config'):
-                        for f in args.file_flag_files:
-                            self.flagItemConfig(f)
-                    elif (args.sp_file_flag == 'config-nr'):
-                        for f in args.file_flag_files:
-                            self.flagItemConfigNoReplace(f)
-                    elif (args.sp_file_flag == 'doc'):
-                        for f in args.file_flag_files:
-                            self.flagItemDoc(f)
+                if (args.sp_file_flag):
+                    if (args.file_flag_files):
+                        if (args.sp_file_flag == 'normal'):
+                            for f in args.file_flag_files:
+                                self.flagItemNormal(f)
+                        elif (args.sp_file_flag == 'config'):
+                            for f in args.file_flag_files:
+                                self.flagItemConfig(f)
+                        elif (args.sp_file_flag == 'config-nr'):
+                            for f in args.file_flag_files:
+                                self.flagItemConfigNoReplace(f)
+                        elif (args.sp_file_flag == 'doc'):
+                            for f in args.file_flag_files:
+                                self.flagItemDoc(f)
+                    else:
+                        p_file_flag.print_help()
                 else:
                     p_file_flag.print_help()
                         
@@ -336,6 +340,9 @@ class Application:
                 
             else:
                 p_file.print_help()
+
+        else:
+            p.print_help()
 
     def preferenceDisplay(self):
         """ Display the current user configuration """
@@ -486,6 +493,7 @@ class Application:
             Package(package_name=name)
         else:
             log.error("  Can not create package at '%s'; path is already occupied." % (path))
+            log.error("")
             sys.exit(1)
         log.info('  New project created at: %s' % (path))
     
@@ -597,6 +605,7 @@ class Application:
             log.error("  If so, you will need to re-initialize the file database using:")
             log.error("")
             log.error("  togo file database --init")
+            log.error("")
             sys.exit(2)
         else:
             self.transaction.commit()
@@ -794,7 +803,7 @@ class Package(SQLObject):
         for file in list(PackageFile.select(PackageFile.q.excluded==0,
                                             orderBy=PackageFile.q.path)):
             local_path = '%s%s'% (self.package_path_root, file.path)
-            permissions = oct(os.stat(local_path).st_mode & 0x777)
+            permissions = oct(os.stat(local_path).st_mode & 0o777)[2:]
             write_string = "%%attr(%s, root, root) " % (permissions)
             if (len(file.directives)):
                 for directive in file.directives:
@@ -912,6 +921,7 @@ class Package(SQLObject):
             specified_compression_type = os.popen('grep Source0 %s' % (spec_file)).readlines()[0].strip()
         except:
             log.error("Can't find source line in specified tar. Unable to determine compression level.")
+            log.error("")
             sys.exit(1)
         for type in compression_types:
             if (specified_compression_type.endswith(list(type.keys())[0])):
@@ -986,6 +996,7 @@ class Package(SQLObject):
         if not (os.path.exists(item)):
             log.error("Couldn't find the specified file/dir to flag.")
             log.error("  %s" % (item))
+            log.error("")
             sys.exit(1)
         
         item = os.path.abspath(item)
@@ -995,7 +1006,8 @@ class Package(SQLObject):
         try:
             item = list(PackageFile.selectBy(path=converted_item))[0]
         except:
-            print("Couldn't find '%s' in the file/dir database." % (converted_item))
+            log.error("Couldn't find '%s' in the file/dir database." % (converted_item))
+            log.error("")
             sys.exit(1)
         else:
             return item
@@ -1008,7 +1020,9 @@ class Package(SQLObject):
         # Check to make sure the item is a directory
         relative_path = "%s%s" % (self.package_path_root, item.path)
         if not (os.path.isdir(relative_path)):
-            log.error("ERROR: You may only exclude directories.")
+            log.error("ERROR: You may only manually include directories.")
+            log.error("       (Other files are automatically included in the project.)")
+            log.error("")
             sys.exit(2)
 
         item.excluded = False
@@ -1023,6 +1037,7 @@ class Package(SQLObject):
         relative_path = "%s%s" % (self.package_path_root, item.path)
         if not (os.path.isdir(relative_path)):
             log.error("ERROR: You may only exclude directories.")
+            log.error("")
             sys.exit(2)
         
         # Cascade the exclude down the directory tree
@@ -1151,9 +1166,11 @@ class Dir:
         self.full_path = full_path
         if (fail_on_exist) and (os.path.exists(self.full_path)):
             log.error("Existing directory found at %s" % (self.full_path))
+            log.error("")
             sys.exit()
         elif (fail_on_missing) and not (os.path.exists(self.full_path)):
             log.error("Directory does not exist.")
+            log.error("")
             sys.exit()
         else:
             self.create()
@@ -1164,26 +1181,7 @@ class Dir:
     def getPath(self):
         return self.full_path
 
+print("")
 togo = Application()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+togo.connection.__del__()
+print("")
