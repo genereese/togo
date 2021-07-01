@@ -1,9 +1,7 @@
 #!/usr/bin/python3
 
 import compileall
-###import fileinput
 import logging
-###import optparse
 import os
 import re
 import subprocess
@@ -14,7 +12,6 @@ try:
     import argparse
 except ImportError:
     raise Exception("'python-argparse' package not installed.")
-###from argparse import RawTextHelpFormatter
 
 # Attempt sqlpobject import
 try:
@@ -1175,4 +1172,4 @@ print("")
 try:
     del togo
 except ImportError:
-    print("ERROR")
+    pass
