@@ -1,7 +1,75 @@
-%changelog
-* Sun Nov 14 2021 Gene Reese <gene.reese@xirsix.com>
-- Fixed bug that sometimes occurred when excluding files from project
+# The name of your package
+Name: togo
 
+# A short summary of your package
+Summary: A quick, easy, and powerful RPM authoring tool
+
+# The version of your package
+Version: 3.0
+
+# The release number of your package
+Release: 3
+
+# Any license you wish to list
+License: GNU GPL
+
+# What group this RPM would typically reside in
+Group: Applications/System
+
+# Who packaged this RPM
+Packager: Gene Reese <gene.reese@xirsix.com>
+
+# The build architecture of this RPM (noarch/x86_64/i386/etc)
+Buildarch: noarch
+
+# You generally should not need to mess with this setting
+Buildroot: %{_tmppath}/%{name}
+
+# Change this extension to change the compression level in your RPM
+# tar / tar.gz / tar.bz2
+Source0: %{name}.tar.gz
+
+# Required for building the togo RPM using itself
+BuildRequires: rsync
+
+# If this package has prerequisites, uncomment this line and
+#  list them here - examples are already listed
+Requires: bash, python3 >= 1, rpm-build, rsync
+
+# A more verbose description of your package
+%description
+Create RPMs without devoting a lot of time into figuring out how to do it!
+
+# You probably do not need to change this
+%define debug_package %{nil}
+
+%prep
+%setup -q -c
+
+%build
+
+%install
+rsync -a . %{buildroot}/
+
+%clean
+rm -rf %{buildroot}
+
+%pre
+
+%post
+
+%preun
+
+%postun
+rm -rf ~/.togo
+
+#%trigger
+
+#%triggerin
+
+#%triggerun
+
+%changelog
 * Thu Jun 24 2021 Gene Reese <gene.reese@xirsix.com>
 - Modified togo to utilize python 3
 - Suppressed a cleanup error message that occurs from a bug in sqlobject codebase
@@ -98,3 +166,8 @@ being included and were causing "non-packaged files" errors
 
 * Mon Sep 16 2013 Gene Reese <gene.reese@xirsix.com>
 - Initial version.
+
+%files
+%attr(775, root, root) "/usr/bin/togo"
+%attr(664, root, root) %doc "/usr/share/man/man1/togo.1.gz"
+

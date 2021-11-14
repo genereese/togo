@@ -1,0 +1,1 @@
+/home/greese/Desktop/rpms/togo/meta/../generated.spec
