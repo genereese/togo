@@ -8,7 +8,7 @@ Summary: A quick, easy, and powerful RPM authoring tool
 Version: 3.0
 
 # The release number of your package
-Release: 3
+Release: 4
 
 # Any license you wish to list
 License: GNU GPL
@@ -70,6 +70,9 @@ rm -rf ~/.togo
 #%triggerun
 
 %changelog
+* Sun Nov 14 2021 Gene Reese <gene.reese@xirsix.com>
+- Fixed bug that sometimes occurred when excluding files from project
+
 * Thu Jun 24 2021 Gene Reese <gene.reese@xirsix.com>
 - Modified togo to utilize python 3
 - Suppressed a cleanup error message that occurs from a bug in sqlobject codebase

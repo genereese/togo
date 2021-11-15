@@ -419,6 +419,7 @@ class Application:
     
     def initializeDatabase(self):
         """ Initializes the package database """
+        log.info("  Initializing database...")
         self.connectToDatabase()
         
         # Try to grab the existing Package object if it exists
@@ -449,6 +450,7 @@ class Application:
         
         # Verify/setup initial data values
         self.verifyDirectiveData()
+        log.info("    Done.")
 
     def verifyDirectiveData(self):
         """ Check the database for inconsistencies and fix any found issues """
@@ -980,20 +982,28 @@ class Package(SQLObject):
         os.system('mv -v `find %s | grep .rpm` %s &>/dev/null' % (srpms_path, destination_srpms_path))
         log.info('Any generated RPMs are in: %s' % (self.package_path_rpms))
     
-    def getPackageFile(self, item):
+    def getPackageFile(self, path):
         """ Tries to find and return a PackageFile """
-        if not (os.path.exists(item)):
-            log.error("Couldn't find the specified file/dir to flag.")
-            log.error("  %s" % (item))
+
+        # Convert path to relative
+        if (path[0] == '/'):
+            path = path[1:]
+        if (path.split('/')[0] == 'root'):
+            path = path[5:]
+        path_relative = path
         
-        item = os.path.abspath(item)
-        strip_string = os.path.abspath(self.package_path_root)
-        converted_item = re.sub(strip_string, '', item)
-        
+        # Check for physical existence of path
+        path_absolute = os.path.join(os.path.abspath(self.package_path_root), path_relative)
+        path_package = "/%s" % (os.path.relpath(path_relative))
+        if not (os.path.exists(path_absolute)):
+            log.error("  ERROR: Couldn't find the specified file/dir to flag:")
+            log.error("    ./root%s" % (path_package))
+            return None
+
         try:
-            item = list(PackageFile.selectBy(path=converted_item))[0]
+            item = list(PackageFile.selectBy(path=path_package))[0]
         except:
-            log.error("Couldn't find '%s' in the file/dir database." % (converted_item))
+            log.error("  ERROR: Couldn't find '%s' in the file/dir database." % (path_package))
         else:
             return item
 
@@ -1005,7 +1015,7 @@ class Package(SQLObject):
         # Check to make sure the item is a directory
         relative_path = "%s%s" % (self.package_path_root, item.path)
         if not (os.path.isdir(relative_path)):
-            log.error("ERROR: You may only manually include directories.")
+            log.error("  ERROR: You may only manually include directories.")
             log.error("       (Other files are automatically included in the project.)")
 
         item.excluded = False
@@ -1014,12 +1024,16 @@ class Package(SQLObject):
         
     def excludeItem(self, item):
         """ Excludes a file/dir from the final RPM """
+
         item = self.getPackageFile(item)
+        if not (item):
+            return
         
         # Check to make sure the item is a directory
         relative_path = "%s%s" % (self.package_path_root, item.path)
         if not (os.path.isdir(relative_path)):
-            log.error("ERROR: You may only exclude directories.")
+            log.error("  ERROR: You may only exclude directories.")
+            log.error("    To remove a file from your RPM, simply move it out of the './root' directory.")
             log.error("")
         
         # Cascade the exclude down the directory tree
@@ -1032,6 +1046,7 @@ class Package(SQLObject):
                 item = list(PackageFile.selectBy(path=basename))[0]
             except IndexError:
                 break
+
     def unflagItem(self, item):
         item = self.getPackageFile(item)
         log.info("  Unflagging '%s'" % (item.path))
