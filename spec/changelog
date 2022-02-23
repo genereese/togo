@@ -1,4 +1,8 @@
 %changelog
+* Wed Feb 23 2021 Gene Reese <gene.reese@xirsix.com>
+- Fixed bug that did not specify the calling of the python3 binary to
+byte-compile python scripts before packaging
+
 * Sun Nov 14 2021 Gene Reese <gene.reese@xirsix.com>
 - Fixed bug that sometimes occurred when excluding files from project
 

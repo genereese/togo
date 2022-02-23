@@ -820,7 +820,7 @@ class Package(SQLObject):
         
         # Account for python scripts which need to be bytecompiled before inclusion
         compileall.compile_dir('root/', quiet=True) # Generate *.pyc
-        os.system("python -O -m compileall root/ > /dev/null 2>&1")  # Generate *.pyo
+        os.system("/usr/bin/python3 -O -m compileall root/ > /dev/null 2>&1")  # Generate *.pyo
         
         process = subprocess.Popen('find %s' % (self.package_path_root), shell=True,
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
