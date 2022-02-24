@@ -1,5 +1,5 @@
 %changelog
-* Wed Feb 23 2021 Gene Reese <gene.reese@xirsix.com>
+* Wed Feb 23 2022 Gene Reese <gene.reese@xirsix.com>
 - Fixed bug that did not specify the calling of the python3 binary to
 byte-compile python scripts before packaging
 
